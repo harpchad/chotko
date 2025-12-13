@@ -16,12 +16,22 @@ func (m Model) View() string {
 	tabBar := m.tabBar.View()
 	commandBar := m.commandInput.View()
 
-	// Render main content area (alerts + detail panes)
-	alertsPane := m.alertList.View()
+	// Render main content area based on active tab
+	var listPane string
+	switch m.tabBar.Active() {
+	case TabAlerts:
+		listPane = m.alertList.View()
+	case TabHosts:
+		listPane = m.hostList.View()
+	default:
+		// For unimplemented tabs, show alerts as fallback
+		listPane = m.alertList.View()
+	}
+
 	detailPane := m.detailPane.View()
 
 	// Join panes horizontally
-	contentArea := lipgloss.JoinHorizontal(lipgloss.Top, alertsPane, detailPane)
+	contentArea := lipgloss.JoinHorizontal(lipgloss.Top, listPane, detailPane)
 
 	// Stack everything vertically
 	return lipgloss.JoinVertical(
