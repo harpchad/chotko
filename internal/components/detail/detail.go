@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/NimbleMarkets/ntcharts/linechart"
+	tslc "github.com/NimbleMarkets/ntcharts/linechart/timeserieslinechart"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
@@ -20,6 +22,7 @@ const (
 	ViewModeProblem ViewMode = iota
 	ViewModeHost
 	ViewModeEvent
+	ViewModeGraph
 )
 
 // Model represents the detail pane component.
@@ -29,6 +32,8 @@ type Model struct {
 	problem *zabbix.Problem
 	host    *zabbix.Host
 	event   *zabbix.Event
+	item    *zabbix.Item
+	history []zabbix.History
 	width   int
 	height  int
 	focused bool
@@ -77,6 +82,19 @@ func (m *Model) SetEvent(e *zabbix.Event) {
 	m.event = e
 	m.problem = nil
 	m.host = nil
+	m.item = nil
+	m.history = nil
+	m.scroll = 0
+}
+
+// SetItem sets the item to display with its history data.
+func (m *Model) SetItem(i *zabbix.Item, history []zabbix.History) {
+	m.mode = ViewModeGraph
+	m.item = i
+	m.history = history
+	m.problem = nil
+	m.host = nil
+	m.event = nil
 	m.scroll = 0
 }
 
@@ -85,6 +103,8 @@ func (m *Model) Clear() {
 	m.problem = nil
 	m.host = nil
 	m.event = nil
+	m.item = nil
+	m.history = nil
 	m.scroll = 0
 }
 
@@ -122,6 +142,8 @@ func (m Model) View() string {
 		return m.viewHost()
 	case ViewModeEvent:
 		return m.viewEvent()
+	case ViewModeGraph:
+		return m.viewGraph()
 	default:
 		return m.viewProblem()
 	}
@@ -498,4 +520,248 @@ func (m Model) interfaceTypeName(t string) string {
 	default:
 		return "Unknown"
 	}
+}
+
+// viewGraph renders the item/graph detail view.
+func (m Model) viewGraph() string {
+	var b strings.Builder
+
+	// Header
+	b.WriteString(m.styles.PaneTitle.Render("GRAPH DETAIL"))
+	b.WriteString("\n")
+	b.WriteString(strings.Repeat("─", max(0, m.width-4)))
+	b.WriteString("\n")
+
+	if m.item == nil {
+		b.WriteString("\n")
+		b.WriteString(m.styles.Subtle.Render("  Select an item to view graph"))
+		b.WriteString("\n")
+	} else {
+		item := m.item
+
+		// Build detail lines
+		lines := []string{}
+
+		// Item name
+		lines = append(lines, m.renderField("Item", item.Name))
+
+		// Host
+		lines = append(lines, m.renderField("Host", item.HostName()))
+
+		// Key
+		lines = append(lines, m.renderField("Key", item.Key))
+
+		// Current value
+		value := formatItemValue(item.LastValueFloat(), item.Units)
+		lines = append(lines, m.renderField("Value", value))
+
+		// Last update
+		if !item.LastTime().IsZero() {
+			lines = append(lines, m.renderField("Updated", item.LastTime().Format("15:04:05")))
+		}
+
+		// Units
+		if item.Units != "" {
+			lines = append(lines, m.renderField("Units", item.Units))
+		}
+
+		// Item ID
+		lines = append(lines, m.renderField("Item ID", item.ItemID))
+
+		// Chart section
+		if len(m.history) > 0 {
+			lines = append(lines, "")
+			lines = append(lines, m.styles.DetailLabel.Render("History Chart:"))
+			lines = append(lines, "")
+
+			// Create time series chart
+			chartWidth := m.width - 8
+			chartHeight := m.height - len(lines) - 8
+			if chartHeight < 5 {
+				chartHeight = 5
+			}
+			if chartHeight > 15 {
+				chartHeight = 15
+			}
+
+			chart := tslc.New(chartWidth, chartHeight,
+				tslc.WithXLabelFormatter(tslc.HourTimeLabelFormatter()),
+				tslc.WithYLabelFormatter(humanReadableYLabelFormatter(item.Units)),
+			)
+
+			// Push history data points
+			for _, h := range m.history {
+				t := h.Time()
+				if !t.IsZero() {
+					chart.Push(tslc.TimePoint{Time: t, Value: h.ValueFloat()})
+				}
+			}
+
+			// Draw the chart using braille characters for better resolution
+			chart.DrawBraille()
+
+			// Add chart lines
+			chartLines := strings.Split(chart.View(), "\n")
+			lines = append(lines, chartLines...)
+
+			// Add time range info
+			if len(m.history) > 0 {
+				first := m.history[0].Time()
+				last := m.history[len(m.history)-1].Time()
+				timeRange := fmt.Sprintf("%s - %s", first.Format("15:04"), last.Format("15:04"))
+				lines = append(lines, m.styles.Subtle.Render(timeRange))
+			}
+		} else {
+			lines = append(lines, "")
+			lines = append(lines, m.styles.Subtle.Render("  No history data available"))
+		}
+
+		// Stats section
+		if len(m.history) > 0 {
+			lines = append(lines, "")
+			lines = append(lines, strings.Repeat("─", max(0, m.width-4)))
+
+			// Calculate stats
+			minVal, maxVal, avgVal := calcStats(m.history)
+			statsLine := fmt.Sprintf("Min: %s  Max: %s  Avg: %s",
+				formatItemValue(minVal, item.Units),
+				formatItemValue(maxVal, item.Units),
+				formatItemValue(avgVal, item.Units))
+			lines = append(lines, m.styles.Subtle.Render(statsLine))
+		}
+
+		b.WriteString(m.renderLines(lines))
+	}
+
+	return m.renderPane(b.String())
+}
+
+// formatItemValue formats a numeric value with appropriate units.
+func formatItemValue(value float64, units string) string {
+	// Handle percentage
+	if units == "%" {
+		return fmt.Sprintf("%.1f%%", value)
+	}
+
+	// Handle bytes
+	if units == "B" || units == "Bps" {
+		return formatBytesValue(value) + strings.TrimPrefix(units, "B")
+	}
+
+	// Handle time units
+	if units == "s" {
+		if value < 1 {
+			return fmt.Sprintf("%.0fms", value*1000)
+		}
+		return fmt.Sprintf("%.2fs", value)
+	}
+
+	// Default formatting
+	if value >= 1000000 {
+		return fmt.Sprintf("%.1fM", value/1000000)
+	}
+	if value >= 1000 {
+		return fmt.Sprintf("%.1fK", value/1000)
+	}
+	if value == float64(int64(value)) {
+		return fmt.Sprintf("%.0f", value)
+	}
+	return fmt.Sprintf("%.2f", value)
+}
+
+// formatBytesValue formats bytes to human-readable form.
+func formatBytesValue(bytes float64) string {
+	const unit = 1024
+	if bytes < unit {
+		return fmt.Sprintf("%.0f", bytes)
+	}
+	div, exp := float64(unit), 0
+	for n := bytes / unit; n >= unit; n /= unit {
+		div *= unit
+		exp++
+	}
+	return fmt.Sprintf("%.1f%c", bytes/div, "KMGTPE"[exp])
+}
+
+// calcStats calculates minVal, maxVal, avgVal for history data.
+func calcStats(history []zabbix.History) (minVal, maxVal, avgVal float64) {
+	if len(history) == 0 {
+		return 0, 0, 0
+	}
+
+	minVal = history[0].ValueFloat()
+	maxVal = minVal
+	sum := 0.0
+
+	for _, h := range history {
+		v := h.ValueFloat()
+		if v < minVal {
+			minVal = v
+		}
+		if v > maxVal {
+			maxVal = v
+		}
+		sum += v
+	}
+
+	avgVal = sum / float64(len(history))
+	return minVal, maxVal, avgVal
+}
+
+// humanReadableYLabelFormatter returns a LabelFormatter that formats Y axis
+// values in human-readable form (e.g., 16G instead of 16000000000).
+func humanReadableYLabelFormatter(units string) linechart.LabelFormatter {
+	return func(_ int, v float64) string {
+		return formatYValue(v, units)
+	}
+}
+
+// formatYValue formats a value for the Y axis label with appropriate SI suffixes.
+func formatYValue(value float64, units string) string {
+	// Handle bytes specially - use binary prefixes (Ki, Mi, Gi)
+	if units == "B" || units == "Bps" {
+		return formatBytesShort(value)
+	}
+
+	// Handle percentages
+	if units == "%" {
+		return fmt.Sprintf("%.0f%%", value)
+	}
+
+	// For other values, use SI prefixes
+	absVal := value
+	if absVal < 0 {
+		absVal = -absVal
+	}
+
+	switch {
+	case absVal >= 1e12:
+		return fmt.Sprintf("%.1fT", value/1e12)
+	case absVal >= 1e9:
+		return fmt.Sprintf("%.1fG", value/1e9)
+	case absVal >= 1e6:
+		return fmt.Sprintf("%.1fM", value/1e6)
+	case absVal >= 1e3:
+		return fmt.Sprintf("%.1fK", value/1e3)
+	case absVal >= 1:
+		return fmt.Sprintf("%.0f", value)
+	case absVal >= 0.01:
+		return fmt.Sprintf("%.2f", value)
+	default:
+		return fmt.Sprintf("%.0f", value)
+	}
+}
+
+// formatBytesShort formats bytes to short human-readable form for axis labels.
+func formatBytesShort(bytes float64) string {
+	const unit = 1024
+	if bytes < unit {
+		return fmt.Sprintf("%.0f", bytes)
+	}
+	div, exp := float64(unit), 0
+	for n := bytes / unit; n >= unit && exp < 5; n /= unit {
+		div *= unit
+		exp++
+	}
+	return fmt.Sprintf("%.1f%c", bytes/div, "KMGTP"[exp])
 }

@@ -21,6 +21,7 @@ type KeyMap struct {
 	Tab1    key.Binding
 	Tab2    key.Binding
 	Tab3    key.Binding
+	Tab4    key.Binding
 
 	// Pane navigation
 	NextPane key.Binding
@@ -100,7 +101,11 @@ func DefaultKeyMap() KeyMap {
 		),
 		Tab3: key.NewBinding(
 			key.WithKeys("F3"),
-			key.WithHelp("F3", "History tab"),
+			key.WithHelp("F3", "Events tab"),
+		),
+		Tab4: key.NewBinding(
+			key.WithKeys("F4"),
+			key.WithHelp("F4", "Graphs tab"),
 		),
 
 		// Pane navigation
@@ -178,7 +183,7 @@ func (k KeyMap) FullHelp() [][]key.Binding {
 		// Navigation
 		{k.Up, k.Down, k.PageUp, k.PageDown, k.Home, k.End},
 		// Tabs
-		{k.NextTab, k.PrevTab, k.Tab1, k.Tab2, k.Tab3},
+		{k.NextTab, k.PrevTab, k.Tab1, k.Tab2, k.Tab3, k.Tab4},
 		// Panes
 		{k.NextPane, k.PrevPane, k.Select},
 		// Actions

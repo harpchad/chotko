@@ -25,6 +25,8 @@ func (m Model) View() string {
 		listPane = m.hostList.View()
 	case TabEvents:
 		listPane = m.eventList.View()
+	case TabGraphs:
+		listPane = m.graphList.View()
 	default:
 		// For unimplemented tabs, show alerts as fallback
 		listPane = m.alertList.View()

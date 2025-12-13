@@ -84,3 +84,21 @@ type CommandExecutedMsg struct {
 type WizardCompleteMsg struct {
 	Success bool
 }
+
+// ItemsLoadedMsg is sent when items are loaded from Zabbix.
+type ItemsLoadedMsg struct {
+	Items []zabbix.Item
+	Err   error
+}
+
+// HostHistoryRequestMsg requests history loading for a specific host's items.
+type HostHistoryRequestMsg struct {
+	HostID string
+}
+
+// HostHistoryLoadedMsg is sent when history for a specific host is loaded.
+type HostHistoryLoadedMsg struct {
+	HostID  string
+	History map[string][]zabbix.History
+	Err     error
+}

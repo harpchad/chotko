@@ -8,6 +8,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/harpchad/chotko/internal/components/command"
+	"github.com/harpchad/chotko/internal/components/graphs"
 )
 
 // Update handles all incoming messages and updates the model accordingly.
@@ -123,6 +124,56 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 
+	case ItemsLoadedMsg:
+		m.loading = false
+		m.statusBar.SetLoading(false)
+		m.lastRefresh = time.Now()
+		m.statusBar.SetLastUpdate(m.lastRefresh.Format("15:04:05"))
+
+		if msg.Err != nil {
+			m.showError = true
+			m.errorModal.ShowError("Failed to Load Items", "Could not retrieve items from Zabbix", msg.Err)
+			return m, nil
+		}
+
+		m.items = msg.Items
+		m.graphList.SetItems(msg.Items, m.config.GetGraphCategories())
+
+		// Update detail pane with selected item if on graphs tab
+		// History will be lazy-loaded when hosts are expanded
+		if m.tabBar.Active() == TabGraphs {
+			if selected := m.graphList.SelectedItem(); selected != nil {
+				history := m.graphList.GetHistory(selected.ItemID)
+				m.detailPane.SetItem(selected, history)
+			}
+		}
+		return m, nil
+
+	case graphs.HostExpandedMsg:
+		// A host node was expanded and needs history loading
+		return m, m.loadHostHistory(msg.HostID)
+
+	case HostHistoryLoadedMsg:
+		// Clear loading state for this host
+		m.graphList.SetHostLoading(msg.HostID, false)
+
+		if msg.Err != nil {
+			// Silent fail for history - not critical
+			return m, nil
+		}
+
+		// Merge history into graph list
+		m.graphList.MergeHistory(msg.History)
+
+		// Update detail pane with selected item if on graphs tab
+		if m.tabBar.Active() == TabGraphs {
+			if selected := m.graphList.SelectedItem(); selected != nil {
+				history := m.graphList.GetHistory(selected.ItemID)
+				m.detailPane.SetItem(selected, history)
+			}
+		}
+		return m, nil
+
 	case HostCountsLoadedMsg:
 		if msg.Err != nil {
 			// Silent fail for host counts
@@ -220,6 +271,17 @@ func (m Model) updateListPane(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if selected := m.eventList.Selected(); selected != nil {
 			m.detailPane.SetEvent(selected)
 		}
+	case TabGraphs:
+		var cmd tea.Cmd
+		m.graphList, cmd = m.graphList.Update(msg)
+		if cmd != nil {
+			cmds = append(cmds, cmd)
+		}
+		// Update detail when selection changes
+		if selected := m.graphList.SelectedItem(); selected != nil {
+			history := m.graphList.GetHistory(selected.ItemID)
+			m.detailPane.SetItem(selected, history)
+		}
 	}
 
 	return m, tea.Batch(cmds...)
@@ -236,6 +298,10 @@ func (m *Model) loadDataForCurrentTab() []tea.Cmd {
 		cmds = append(cmds, m.loadHosts())
 	case TabEvents:
 		cmds = append(cmds, m.loadEvents())
+	case TabGraphs:
+		// Load both items and history for graphs tab
+		// History will be loaded after ItemsLoadedMsg is received
+		cmds = append(cmds, m.loadItems())
 	default:
 		// For other tabs, load problems by default
 		cmds = append(cmds, m.loadProblems())
@@ -283,6 +349,8 @@ func (m Model) handleKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m.switchTab(1)
 	case key.Matches(msg, m.keys.Tab3):
 		return m.switchTab(2)
+	case key.Matches(msg, m.keys.Tab4):
+		return m.switchTab(3)
 
 	// Pane navigation
 	case key.Matches(msg, m.keys.NextPane):
@@ -374,31 +442,34 @@ func (m Model) switchTab(newTab int) (tea.Model, tea.Cmd) {
 	m.updateDetailForCurrentTab()
 
 	// Load data if switching to a different tab type
-	var cmd tea.Cmd
-	if oldTab != newTab && m.connected && !m.loading {
+	var cmds []tea.Cmd
+	if oldTab != newTab && m.connected {
 		switch newTab {
 		case TabAlerts:
 			if len(m.problems) == 0 {
-				m.loading = true
 				m.statusBar.SetLoading(true)
-				cmd = m.loadProblems()
+				cmds = append(cmds, m.loadProblems())
 			}
 		case TabHosts:
 			if len(m.hosts) == 0 {
-				m.loading = true
 				m.statusBar.SetLoading(true)
-				cmd = m.loadHosts()
+				cmds = append(cmds, m.loadHosts())
 			}
 		case TabEvents:
 			if len(m.events) == 0 {
-				m.loading = true
 				m.statusBar.SetLoading(true)
-				cmd = m.loadEvents()
+				cmds = append(cmds, m.loadEvents())
 			}
+		case TabGraphs:
+			if len(m.items) == 0 {
+				m.statusBar.SetLoading(true)
+				cmds = append(cmds, m.loadItems())
+			}
+			// History is now lazy-loaded when hosts are expanded
 		}
 	}
 
-	return m, cmd
+	return m, tea.Batch(cmds...)
 }
 
 // updateListFocus updates the focus state for list components based on current tab.
@@ -409,6 +480,7 @@ func (m *Model) updateListFocus() {
 	m.alertList.SetFocused(false)
 	m.hostList.SetFocused(false)
 	m.eventList.SetFocused(false)
+	m.graphList.SetFocused(false)
 
 	// Set focus for the active tab's list
 	switch m.tabBar.Active() {
@@ -418,6 +490,8 @@ func (m *Model) updateListFocus() {
 		m.hostList.SetFocused(isFocused)
 	case TabEvents:
 		m.eventList.SetFocused(isFocused)
+	case TabGraphs:
+		m.graphList.SetFocused(isFocused)
 	}
 }
 
@@ -441,6 +515,13 @@ func (m *Model) updateDetailForCurrentTab() {
 			m.detailPane.SetEvent(selected)
 		} else {
 			m.detailPane.SetEvent(nil)
+		}
+	case TabGraphs:
+		if selected := m.graphList.SelectedItem(); selected != nil {
+			history := m.graphList.GetHistory(selected.ItemID)
+			m.detailPane.SetItem(selected, history)
+		} else {
+			m.detailPane.SetItem(nil, nil)
 		}
 	default:
 		m.detailPane.Clear()
@@ -516,6 +597,8 @@ func (m *Model) cycleFocus(direction int) {
 	case PaneList:
 		m.alertList.SetFocused(false)
 		m.hostList.SetFocused(false)
+		m.eventList.SetFocused(false)
+		m.graphList.SetFocused(false)
 	case PaneDetail:
 		m.detailPane.SetFocused(false)
 	}

@@ -57,7 +57,7 @@ gh pr create --title "feat: description" --body "..." && gh pr merge --squash --
 
 - [x] Hosts tab view (UI exists, needs data integration)
 - [x] Events/History tab view
-- [ ] Graphs tab view
+- [x] Graphs tab view
 
 ### TODO
 
@@ -66,7 +66,7 @@ gh pr create --title "feat: description" --body "..." && gh pr merge --squash --
 
 ### Known Issues
 
-1. Graphs tab not yet implemented (shows alerts as fallback)
+None currently.
 
 ---
 
@@ -246,7 +246,7 @@ Important: BubbleTea uses value semantics for models. When returning `tea.Cmd` f
 | `k`/`↑` | Move up |
 | `]`/`L` | Next tab |
 | `[`/`H` | Previous tab |
-| `F1-F3` | Jump to tab |
+| `F1-F4` | Jump to tab |
 | `Tab` | Next pane |
 | `Shift+Tab` | Previous pane |
 | `a` | Acknowledge problem |
@@ -258,6 +258,14 @@ Important: BubbleTea uses value semantics for models. When returning `tea.Cmd` f
 | `:` | Command mode |
 | `?` | Help |
 | `q` | Quit |
+
+### Graphs Tab Keys
+
+| Key | Action |
+|-----|--------|
+| `Enter`/`Space` | Toggle expand/collapse |
+| `E` | Expand all |
+| `C` | Collapse all |
 
 ---
 
@@ -278,6 +286,7 @@ chotko/
 │   │   ├── command/             # Command input
 │   │   ├── detail/              # Detail pane
 │   │   ├── events/              # Events history list
+│   │   ├── graphs/              # Graphs tree view
 │   │   ├── hosts/               # Hosts list
 │   │   ├── modal/               # Modal dialogs
 │   │   ├── statusbar/           # Status bar
@@ -288,7 +297,8 @@ chotko/
 │       ├── client.go            # HTTP client, auth
 │       ├── types.go             # Data structures
 │       ├── problems.go          # Problem/event fetching
-│       └── hosts.go             # Host fetching
+│       ├── hosts.go             # Host fetching
+│       └── items.go             # Item/history fetching
 ├── .github/
 │   ├── workflows/
 │   │   ├── ci.yml               # CI pipeline
