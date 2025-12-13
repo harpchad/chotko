@@ -1,4 +1,30 @@
-# Chotko Development Progress
+# Chotko - Agent Guidelines
+
+## Commands
+```bash
+go build ./...                           # Build all
+go test -race ./...                      # Test all
+go test -race ./internal/zabbix -run TestClient  # Single test
+golangci-lint run --timeout=5m           # Lint (uses .golangci.yml v2)
+```
+
+## Code Style
+- **Formatter**: `gofumpt` (stricter than gofmt) - runs via pre-commit
+- **Imports**: stdlib, blank line, external, blank line, `github.com/harpchad/chotko/...`
+- **Errors**: Return `fmt.Errorf("context: %w", err)`, check all errors
+- **Comments**: Package comments required, exported symbols must have doc comments
+- **Naming**: MixedCaps, no underscores; receivers are single letter (e.g., `m`, `c`)
+
+## Git Workflow
+**Always use PRs, never push directly to main.**
+```bash
+git checkout -b feature/description && git commit -m "feat: description"
+gh pr create --title "feat: description" --body "..." && gh pr merge --squash --delete-branch
+```
+
+---
+
+# Development Progress
 
 ## Current Status: MVP Functional
 
