@@ -145,18 +145,38 @@ func (p *Problem) IsSuppressed() bool {
 // StartTime returns the problem start time.
 func (p *Problem) StartTime() time.Time {
 	ts, _ := strconv.ParseInt(p.Clock, 10, 64)
+	if ts <= 0 {
+		return time.Time{}
+	}
 	return time.Unix(ts, 0)
 }
 
 // Duration returns how long the problem has been active.
+// Returns 0 if start time is invalid.
 func (p *Problem) Duration() time.Duration {
-	return time.Since(p.StartTime())
+	start := p.StartTime()
+	if start.IsZero() {
+		return 0
+	}
+	d := time.Since(start)
+	// Sanity check - if duration is negative or unreasonably large, return 0
+	if d < 0 {
+		return 0
+	}
+	return d
 }
 
 // DurationString returns a human-readable duration string.
 func (p *Problem) DurationString() string {
 	d := p.Duration()
+	if d <= 0 {
+		return "-"
+	}
+	return formatDuration(d)
+}
 
+// formatDuration formats a duration as a human-readable string.
+func formatDuration(d time.Duration) string {
 	if d < time.Minute {
 		return fmt.Sprintf("%ds", int(d.Seconds()))
 	}
@@ -229,38 +249,36 @@ func (p *Problem) RecoveryTime() time.Time {
 		return time.Time{}
 	}
 	ts, _ := strconv.ParseInt(p.RClock, 10, 64)
+	if ts <= 0 {
+		return time.Time{}
+	}
 	return time.Unix(ts, 0)
 }
 
 // ResolvedDuration returns how long the problem lasted before being resolved.
-// Returns 0 if not resolved.
+// Returns 0 if not resolved or if times are invalid.
 func (p *Problem) ResolvedDuration() time.Duration {
 	if !p.IsRecovery() {
 		return 0
 	}
-	return p.RecoveryTime().Sub(p.StartTime())
+	start := p.StartTime()
+	end := p.RecoveryTime()
+	if start.IsZero() || end.IsZero() {
+		return 0
+	}
+	d := end.Sub(start)
+	// Sanity check - duration should be positive
+	if d < 0 {
+		return 0
+	}
+	return d
 }
 
 // ResolvedDurationString returns human-readable duration for resolved problems.
 func (p *Problem) ResolvedDurationString() string {
 	d := p.ResolvedDuration()
-	if d == 0 {
-		return ""
+	if d <= 0 {
+		return "-"
 	}
-
-	if d < time.Minute {
-		return fmt.Sprintf("%ds", int(d.Seconds()))
-	}
-	if d < time.Hour {
-		return fmt.Sprintf("%dm", int(d.Minutes()))
-	}
-	if d < 24*time.Hour {
-		h := int(d.Hours())
-		m := int(d.Minutes()) % 60
-		return fmt.Sprintf("%dh %dm", h, m)
-	}
-
-	days := int(d.Hours()) / 24
-	hours := int(d.Hours()) % 24
-	return fmt.Sprintf("%dd %dh", days, hours)
+	return formatDuration(d)
 }
