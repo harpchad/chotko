@@ -16,10 +16,22 @@ golangci-lint run --timeout=5m           # Lint (uses .golangci.yml v2)
 - **Naming**: MixedCaps, no underscores; receivers are single letter (e.g., `m`, `c`)
 
 ## Git Workflow
-**Always use PRs, never push directly to main.**
+**CRITICAL: Never push directly to main. Always use pull requests.**
+
 ```bash
-git checkout -b feature/description && git commit -m "feat: description"
-gh pr create --title "feat: description" --body "..." && gh pr merge --squash --delete-branch
+# 1. Create feature branch
+git checkout -b fix/description   # or feature/description
+
+# 2. Make changes and commit
+git add -A && git commit -m "fix: description"
+
+# 3. Push branch and create PR
+git push -u origin fix/description
+gh pr create --title "fix: description" --body "## Summary
+- Brief description of changes"
+
+# 4. After CI passes, merge (if authorized)
+gh pr merge --squash --delete-branch
 ```
 
 ---
@@ -147,31 +159,49 @@ None currently.
 
 ### Git Workflow
 
-**IMPORTANT: Never push directly to main. Always use pull requests.**
+**CRITICAL: NEVER push directly to main. ALWAYS use pull requests.**
+
+This is a strict requirement for all changes, no exceptions. Direct pushes to main
+bypass CI checks, code review, and can break the build for everyone.
 
 1. Create a feature branch for any changes:
    ```bash
    git checkout -b fix/description-of-fix
    # or
    git checkout -b feature/description-of-feature
+   # or
+   git checkout -b refactor/description
    ```
 
 2. Make changes and commit with conventional commit messages:
    ```bash
+   git add -A
    git commit -m "fix: description of the fix"
    git commit -m "feat: description of the feature"
+   git commit -m "refactor: description of refactoring"
    ```
 
 3. Push the branch and create a PR:
    ```bash
    git push -u origin fix/description-of-fix
-   gh pr create --title "fix: description" --body "Details..."
+   gh pr create --title "fix: description" --body "$(cat <<'EOF'
+   ## Summary
+   - Brief description of changes
+   EOF
+   )"
    ```
 
-4. Wait for CI to pass, then merge via GitHub UI or:
+4. Wait for CI to pass, then merge (if authorized):
    ```bash
    gh pr merge --squash --delete-branch
    ```
+
+**Branch naming conventions:**
+- `fix/` - Bug fixes
+- `feature/` or `feat/` - New features
+- `refactor/` - Code refactoring
+- `docs/` - Documentation changes
+- `chore/` - Maintenance tasks
 
 ### Code Formatting
 
