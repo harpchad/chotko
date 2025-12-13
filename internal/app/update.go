@@ -16,8 +16,6 @@ import (
 
 // Update handles all incoming messages and updates the model accordingly.
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	var cmds []tea.Cmd
-
 	// Handle editor modal first if visible
 	if m.showEditor {
 		return m.handleEditorUpdate(msg)
@@ -33,260 +31,303 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 		}
-		// Don't process other messages while modal is open
 		return m, nil
 	}
 
+	// Route messages to appropriate handlers
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.SetSize(msg.Width, msg.Height)
 		m.errorModal.SetScreenSize(msg.Width, msg.Height)
 		return m, nil
-
 	case tea.MouseMsg:
 		return m.handleMouseMsg(msg)
-
 	case tea.KeyMsg:
 		return m.handleKeyMsg(msg)
-
 	case ConnectedMsg:
-		m.connected = true
-		m.version = msg.Version
-		m.client = msg.Client
-		m.statusBar.SetConnected(true, msg.Version)
-		// Load initial data
-		return m, tea.Batch(m.loadProblems(), m.loadHostCounts())
-
+		return m.handleConnectedMsg(msg)
 	case DisconnectedMsg:
-		m.connected = false
-		m.statusBar.SetConnected(false, "")
-		if msg.Err != nil {
-			m.showError = true
-			m.errorModal.ShowError("Connection Lost", "Lost connection to Zabbix server", msg.Err)
-		}
-		return m, nil
-
+		return m.handleDisconnectedMsg(msg)
 	case ProblemsLoadedMsg:
-		m.loading = false
-		m.statusBar.SetLoading(false)
-		m.lastRefresh = time.Now()
-		m.statusBar.SetLastUpdate(m.lastRefresh.Format("15:04:05"))
-
-		if msg.Err != nil {
-			m.showError = true
-			m.errorModal.ShowError("Failed to Load Problems", "Could not retrieve problems from Zabbix", msg.Err)
-			return m, nil
-		}
-
-		m.problems = msg.Problems
-		m.alertList.SetProblems(msg.Problems)
-
-		// Update detail pane with selected problem if on alerts tab
-		if m.tabBar.Active() == TabAlerts {
-			if selected := m.alertList.Selected(); selected != nil {
-				m.detailPane.SetProblem(selected)
-			}
-		}
-		return m, nil
-
+		return m.handleProblemsLoadedMsg(msg)
 	case HostsLoadedMsg:
-		m.loading = false
-		m.statusBar.SetLoading(false)
-		m.lastRefresh = time.Now()
-		m.statusBar.SetLastUpdate(m.lastRefresh.Format("15:04:05"))
-
-		if msg.Err != nil {
-			m.showError = true
-			m.errorModal.ShowError("Failed to Load Hosts", "Could not retrieve hosts from Zabbix", msg.Err)
-			return m, nil
-		}
-
-		m.hosts = msg.Hosts
-		m.hostList.SetHosts(msg.Hosts)
-
-		// Update detail pane with selected host if on hosts tab
-		if m.tabBar.Active() == TabHosts {
-			if selected := m.hostList.Selected(); selected != nil {
-				m.detailPane.SetHost(selected)
-			}
-		}
-		return m, nil
-
+		return m.handleHostsLoadedMsg(msg)
 	case EventsLoadedMsg:
-		m.loading = false
-		m.statusBar.SetLoading(false)
-		m.lastRefresh = time.Now()
-		m.statusBar.SetLastUpdate(m.lastRefresh.Format("15:04:05"))
-
-		if msg.Err != nil {
-			m.showError = true
-			m.errorModal.ShowError("Failed to Load Events", "Could not retrieve events from Zabbix", msg.Err)
-			return m, nil
-		}
-
-		m.events = msg.Events
-		m.eventList.SetEvents(msg.Events)
-
-		// Update detail pane with selected event if on events tab
-		if m.tabBar.Active() == TabEvents {
-			if selected := m.eventList.Selected(); selected != nil {
-				m.detailPane.SetEvent(selected)
-			}
-		}
-		return m, nil
-
+		return m.handleEventsLoadedMsg(msg)
 	case ItemsLoadedMsg:
-		m.loading = false
-		m.statusBar.SetLoading(false)
-		m.lastRefresh = time.Now()
-		m.statusBar.SetLastUpdate(m.lastRefresh.Format("15:04:05"))
-
-		if msg.Err != nil {
-			m.showError = true
-			m.errorModal.ShowError("Failed to Load Items", "Could not retrieve items from Zabbix", msg.Err)
-			return m, nil
-		}
-
-		m.items = msg.Items
-		m.graphList.SetItems(msg.Items, m.config.GetGraphCategories())
-
-		// Update detail pane with selected item if on graphs tab
-		// History will be lazy-loaded when hosts are expanded
-		if m.tabBar.Active() == TabGraphs {
-			if selected := m.graphList.SelectedItem(); selected != nil {
-				history := m.graphList.GetHistory(selected.ItemID)
-				m.detailPane.SetItem(selected, history)
-			}
-		}
-		return m, nil
-
+		return m.handleItemsLoadedMsg(msg)
 	case graphs.HostExpandedMsg:
-		// A host node was expanded and needs history loading
 		return m, m.loadHostHistory(msg.HostID)
-
 	case HostHistoryLoadedMsg:
-		// Clear loading state for this host
-		m.graphList.SetHostLoading(msg.HostID, false)
-
-		if msg.Err != nil {
-			// Silent fail for history - not critical
-			return m, nil
-		}
-
-		// Merge history into graph list
-		m.graphList.MergeHistory(msg.History)
-
-		// Update detail pane with selected item if on graphs tab
-		if m.tabBar.Active() == TabGraphs {
-			if selected := m.graphList.SelectedItem(); selected != nil {
-				history := m.graphList.GetHistory(selected.ItemID)
-				m.detailPane.SetItem(selected, history)
-			}
-		}
-		return m, nil
-
+		return m.handleHostHistoryLoadedMsg(msg)
 	case HostCountsLoadedMsg:
-		if msg.Err != nil {
-			// Silent fail for host counts
-			return m, nil
-		}
-		m.hostCounts = msg.Counts
-		m.statusBar.SetCounts(msg.Counts)
-		return m, nil
-
+		return m.handleHostCountsLoadedMsg(msg)
 	case AcknowledgeResultMsg:
-		if msg.Err != nil {
-			m.showError = true
-			m.errorModal.ShowError("Acknowledge Failed", "Could not acknowledge problem", msg.Err)
-			return m, nil
-		}
-		// Refresh data after successful ack
-		return m, m.loadProblems()
-
+		return m.handleAcknowledgeResultMsg(msg)
 	case RefreshTickMsg:
-		if !m.loading && m.connected {
-			m.loading = true
-			m.statusBar.SetLoading(true)
-			cmds = append(cmds, m.loadDataForCurrentTab()...)
-		}
-		cmds = append(cmds, m.tickRefresh())
-		return m, tea.Batch(cmds...)
-
+		return m.handleRefreshTickMsg()
 	case ErrorMsg:
 		m.showError = true
 		m.errorModal.ShowError(msg.Title, msg.Message, msg.Err)
 		return m, nil
-
 	case ClearErrorMsg:
 		m.showError = false
 		m.errorModal.Hide()
 		return m, nil
-
 	case HostTriggersLoadedMsg:
-		if msg.Err != nil {
-			m.showError = true
-			m.errorModal.ShowError("Failed to Load Triggers", "Could not retrieve triggers from Zabbix", msg.Err)
-			return m, nil
-		}
-		// Show the triggers editor - find the host from various sources
-		host := m.findHostByID(msg.HostID)
-		if host != nil {
-			m.editorPane.ShowHostTriggers(host, msg.Triggers, msg.SelectTriggerID)
-			m.showEditor = true
-		}
-		return m, nil
-
+		return m.handleHostTriggersLoadedMsg(msg)
 	case HostMacrosLoadedMsg:
-		if msg.Err != nil {
-			m.showError = true
-			m.errorModal.ShowError("Failed to Load Macros", "Could not retrieve macros from Zabbix", msg.Err)
-			return m, nil
-		}
-		// Show the macros editor - find the host from various sources
-		host := m.findHostByID(msg.HostID)
-		if host != nil {
-			m.editorPane.ShowHostMacros(host, msg.Macros)
-			m.showEditor = true
-		}
-		return m, nil
-
+		return m.handleHostMacrosLoadedMsg(msg)
 	case TriggerUpdateResultMsg:
-		if msg.Err != nil {
-			m.showError = true
-			m.errorModal.ShowError("Trigger Update Failed", "Could not update trigger", msg.Err)
-			return m, nil
-		}
-		// Refresh hosts and reload triggers for the host we were editing
-		hostID := m.getSelectedHostID()
-		if hostID != "" {
-			// Reload triggers, keeping cursor on the same trigger we just toggled
-			return m, tea.Batch(m.loadHosts(), m.loadHostTriggers(hostID, msg.TriggerID))
-		}
-		return m, m.loadHosts()
-
+		return m.handleTriggerUpdateResultMsg(msg)
 	case MacroUpdateResultMsg:
-		if msg.Err != nil {
-			m.showError = true
-			m.errorModal.ShowError("Macro Update Failed", "Could not update macro", msg.Err)
-			return m, nil
-		}
-		// Reload macros for current host
-		if selected := m.hostList.Selected(); selected != nil {
-			return m, m.loadHostMacros(selected.HostID)
-		}
-		return m, nil
-
+		return m.handleMacroUpdateResultMsg(msg)
 	case HostUpdateResultMsg:
-		if msg.Err != nil {
-			m.showError = true
-			m.errorModal.ShowError("Host Update Failed", "Could not update host", msg.Err)
-			return m, nil
-		}
-		// Refresh hosts list
-		return m, m.loadHosts()
+		return m.handleHostUpdateResultMsg(msg)
 	}
 
-	// Update focused component based on current tab
+	return m.handleFocusedComponentUpdate(msg)
+}
+
+// handleConnectedMsg handles successful connection to Zabbix.
+func (m Model) handleConnectedMsg(msg ConnectedMsg) (tea.Model, tea.Cmd) {
+	m.connected = true
+	m.version = msg.Version
+	m.client = msg.Client
+	m.statusBar.SetConnected(true, msg.Version)
+	return m, tea.Batch(m.loadProblems(), m.loadHostCounts())
+}
+
+// handleDisconnectedMsg handles disconnection from Zabbix.
+func (m Model) handleDisconnectedMsg(msg DisconnectedMsg) (tea.Model, tea.Cmd) {
+	m.connected = false
+	m.statusBar.SetConnected(false, "")
+	if msg.Err != nil {
+		m.showError = true
+		m.errorModal.ShowError("Connection Lost", "Lost connection to Zabbix server", msg.Err)
+	}
+	return m, nil
+}
+
+// handleProblemsLoadedMsg handles loaded problems data.
+func (m Model) handleProblemsLoadedMsg(msg ProblemsLoadedMsg) (tea.Model, tea.Cmd) {
+	m.loading = false
+	m.statusBar.SetLoading(false)
+	m.lastRefresh = time.Now()
+	m.statusBar.SetLastUpdate(m.lastRefresh.Format("15:04:05"))
+
+	if msg.Err != nil {
+		m.showError = true
+		m.errorModal.ShowError("Failed to Load Problems", "Could not retrieve problems from Zabbix", msg.Err)
+		return m, nil
+	}
+
+	m.problems = msg.Problems
+	m.alertList.SetProblems(msg.Problems)
+
+	if m.tabBar.Active() == TabAlerts {
+		if selected := m.alertList.Selected(); selected != nil {
+			m.detailPane.SetProblem(selected)
+		}
+	}
+	return m, nil
+}
+
+// handleHostsLoadedMsg handles loaded hosts data.
+func (m Model) handleHostsLoadedMsg(msg HostsLoadedMsg) (tea.Model, tea.Cmd) {
+	m.loading = false
+	m.statusBar.SetLoading(false)
+	m.lastRefresh = time.Now()
+	m.statusBar.SetLastUpdate(m.lastRefresh.Format("15:04:05"))
+
+	if msg.Err != nil {
+		m.showError = true
+		m.errorModal.ShowError("Failed to Load Hosts", "Could not retrieve hosts from Zabbix", msg.Err)
+		return m, nil
+	}
+
+	m.hosts = msg.Hosts
+	m.hostList.SetHosts(msg.Hosts)
+
+	if m.tabBar.Active() == TabHosts {
+		if selected := m.hostList.Selected(); selected != nil {
+			m.detailPane.SetHost(selected)
+		}
+	}
+	return m, nil
+}
+
+// handleEventsLoadedMsg handles loaded events data.
+func (m Model) handleEventsLoadedMsg(msg EventsLoadedMsg) (tea.Model, tea.Cmd) {
+	m.loading = false
+	m.statusBar.SetLoading(false)
+	m.lastRefresh = time.Now()
+	m.statusBar.SetLastUpdate(m.lastRefresh.Format("15:04:05"))
+
+	if msg.Err != nil {
+		m.showError = true
+		m.errorModal.ShowError("Failed to Load Events", "Could not retrieve events from Zabbix", msg.Err)
+		return m, nil
+	}
+
+	m.events = msg.Events
+	m.eventList.SetEvents(msg.Events)
+
+	if m.tabBar.Active() == TabEvents {
+		if selected := m.eventList.Selected(); selected != nil {
+			m.detailPane.SetEvent(selected)
+		}
+	}
+	return m, nil
+}
+
+// handleItemsLoadedMsg handles loaded items data.
+func (m Model) handleItemsLoadedMsg(msg ItemsLoadedMsg) (tea.Model, tea.Cmd) {
+	m.loading = false
+	m.statusBar.SetLoading(false)
+	m.lastRefresh = time.Now()
+	m.statusBar.SetLastUpdate(m.lastRefresh.Format("15:04:05"))
+
+	if msg.Err != nil {
+		m.showError = true
+		m.errorModal.ShowError("Failed to Load Items", "Could not retrieve items from Zabbix", msg.Err)
+		return m, nil
+	}
+
+	m.items = msg.Items
+	m.graphList.SetItems(msg.Items, m.config.GetGraphCategories())
+
+	if m.tabBar.Active() == TabGraphs {
+		if selected := m.graphList.SelectedItem(); selected != nil {
+			history := m.graphList.GetHistory(selected.ItemID)
+			m.detailPane.SetItem(selected, history)
+		}
+	}
+	return m, nil
+}
+
+// handleHostHistoryLoadedMsg handles loaded history data.
+func (m Model) handleHostHistoryLoadedMsg(msg HostHistoryLoadedMsg) (tea.Model, tea.Cmd) {
+	m.graphList.SetHostLoading(msg.HostID, false)
+
+	if msg.Err != nil {
+		return m, nil
+	}
+
+	m.graphList.MergeHistory(msg.History)
+
+	if m.tabBar.Active() == TabGraphs {
+		if selected := m.graphList.SelectedItem(); selected != nil {
+			history := m.graphList.GetHistory(selected.ItemID)
+			m.detailPane.SetItem(selected, history)
+		}
+	}
+	return m, nil
+}
+
+// handleHostCountsLoadedMsg handles loaded host counts.
+func (m Model) handleHostCountsLoadedMsg(msg HostCountsLoadedMsg) (tea.Model, tea.Cmd) {
+	if msg.Err != nil {
+		return m, nil
+	}
+	m.hostCounts = msg.Counts
+	m.statusBar.SetCounts(msg.Counts)
+	return m, nil
+}
+
+// handleAcknowledgeResultMsg handles acknowledge result.
+func (m Model) handleAcknowledgeResultMsg(msg AcknowledgeResultMsg) (tea.Model, tea.Cmd) {
+	if msg.Err != nil {
+		m.showError = true
+		m.errorModal.ShowError("Acknowledge Failed", "Could not acknowledge problem", msg.Err)
+		return m, nil
+	}
+	return m, m.loadProblems()
+}
+
+// handleRefreshTickMsg handles periodic refresh.
+func (m Model) handleRefreshTickMsg() (tea.Model, tea.Cmd) {
+	var cmds []tea.Cmd
+	if !m.loading && m.connected {
+		m.loading = true
+		m.statusBar.SetLoading(true)
+		cmds = append(cmds, m.loadDataForCurrentTab()...)
+	}
+	cmds = append(cmds, m.tickRefresh())
+	return m, tea.Batch(cmds...)
+}
+
+// handleHostTriggersLoadedMsg handles loaded triggers for editor.
+func (m Model) handleHostTriggersLoadedMsg(msg HostTriggersLoadedMsg) (tea.Model, tea.Cmd) {
+	if msg.Err != nil {
+		m.showError = true
+		m.errorModal.ShowError("Failed to Load Triggers", "Could not retrieve triggers from Zabbix", msg.Err)
+		return m, nil
+	}
+	host := m.findHostByID(msg.HostID)
+	if host != nil {
+		m.editorPane.ShowHostTriggers(host, msg.Triggers, msg.SelectTriggerID)
+		m.showEditor = true
+	}
+	return m, nil
+}
+
+// handleHostMacrosLoadedMsg handles loaded macros for editor.
+func (m Model) handleHostMacrosLoadedMsg(msg HostMacrosLoadedMsg) (tea.Model, tea.Cmd) {
+	if msg.Err != nil {
+		m.showError = true
+		m.errorModal.ShowError("Failed to Load Macros", "Could not retrieve macros from Zabbix", msg.Err)
+		return m, nil
+	}
+	host := m.findHostByID(msg.HostID)
+	if host != nil {
+		m.editorPane.ShowHostMacros(host, msg.Macros)
+		m.showEditor = true
+	}
+	return m, nil
+}
+
+// handleTriggerUpdateResultMsg handles trigger update result.
+func (m Model) handleTriggerUpdateResultMsg(msg TriggerUpdateResultMsg) (tea.Model, tea.Cmd) {
+	if msg.Err != nil {
+		m.showError = true
+		m.errorModal.ShowError("Trigger Update Failed", "Could not update trigger", msg.Err)
+		return m, nil
+	}
+	hostID := m.getSelectedHostID()
+	if hostID != "" {
+		return m, tea.Batch(m.loadHosts(), m.loadHostTriggers(hostID, msg.TriggerID))
+	}
+	return m, m.loadHosts()
+}
+
+// handleMacroUpdateResultMsg handles macro update result.
+func (m Model) handleMacroUpdateResultMsg(msg MacroUpdateResultMsg) (tea.Model, tea.Cmd) {
+	if msg.Err != nil {
+		m.showError = true
+		m.errorModal.ShowError("Macro Update Failed", "Could not update macro", msg.Err)
+		return m, nil
+	}
+	if selected := m.hostList.Selected(); selected != nil {
+		return m, m.loadHostMacros(selected.HostID)
+	}
+	return m, nil
+}
+
+// handleHostUpdateResultMsg handles host update result.
+func (m Model) handleHostUpdateResultMsg(msg HostUpdateResultMsg) (tea.Model, tea.Cmd) {
+	if msg.Err != nil {
+		m.showError = true
+		m.errorModal.ShowError("Host Update Failed", "Could not update host", msg.Err)
+		return m, nil
+	}
+	return m, m.loadHosts()
+}
+
+// handleFocusedComponentUpdate updates the focused component.
+func (m Model) handleFocusedComponentUpdate(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmds []tea.Cmd
+
 	switch m.focused {
 	case PaneList:
 		return m.updateListPane(msg)
@@ -298,7 +339,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 
-	// Update command input if active
 	if m.commandInput.IsActive() {
 		var cmd tea.Cmd
 		m.commandInput, cmd = m.commandInput.Update(msg)
@@ -386,131 +426,173 @@ func (m *Model) loadDataForCurrentTab() []tea.Cmd {
 
 // handleKeyMsg processes keyboard input.
 func (m Model) handleKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	// Handle command input mode
 	if m.commandInput.IsActive() {
 		return m.handleCommandInput(msg)
 	}
 
+	// Global keys
+	if model, cmd, handled := m.handleGlobalKeys(msg); handled {
+		return model, cmd
+	}
+
+	// Navigation keys
+	if model, cmd, handled := m.handleNavigationKeys(msg); handled {
+		return model, cmd
+	}
+
+	// Action keys
+	if model, cmd, handled := m.handleActionKeys(msg); handled {
+		return model, cmd
+	}
+
+	// Forward to focused component
+	return m.forwardToFocusedComponent(msg)
+}
+
+// handleGlobalKeys handles quit, help, and refresh.
+func (m Model) handleGlobalKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd, bool) {
 	switch {
-	// Quit
 	case key.Matches(msg, m.keys.Quit):
 		m.Shutdown()
-		return m, tea.Quit
-
-	// Help
+		return m, tea.Quit, true
 	case key.Matches(msg, m.keys.Help):
 		m.showHelp = true
 		m.errorModal.ShowHelp()
-		return m, nil
-
-	// Refresh
+		return m, nil, true
 	case key.Matches(msg, m.keys.Refresh):
 		if !m.loading && m.connected {
 			m.loading = true
 			m.statusBar.SetLoading(true)
-			return m, tea.Batch(m.loadDataForCurrentTab()...)
+			return m, tea.Batch(m.loadDataForCurrentTab()...), true
 		}
-		return m, nil
+		return m, nil, true
+	}
+	return m, nil, false
+}
 
-	// Tab navigation
+// handleNavigationKeys handles tab and pane navigation.
+func (m Model) handleNavigationKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd, bool) {
+	switch {
 	case key.Matches(msg, m.keys.NextTab):
-		return m.switchTab(m.tabBar.Active() + 1)
+		model, cmd := m.switchTab(m.tabBar.Active() + 1)
+		return model, cmd, true
 	case key.Matches(msg, m.keys.PrevTab):
-		return m.switchTab(m.tabBar.Active() - 1)
+		model, cmd := m.switchTab(m.tabBar.Active() - 1)
+		return model, cmd, true
 	case key.Matches(msg, m.keys.Tab1):
-		return m.switchTab(0)
+		model, cmd := m.switchTab(0)
+		return model, cmd, true
 	case key.Matches(msg, m.keys.Tab2):
-		return m.switchTab(1)
+		model, cmd := m.switchTab(1)
+		return model, cmd, true
 	case key.Matches(msg, m.keys.Tab3):
-		return m.switchTab(2)
+		model, cmd := m.switchTab(2)
+		return model, cmd, true
 	case key.Matches(msg, m.keys.Tab4):
-		return m.switchTab(3)
-
-	// Pane navigation
+		model, cmd := m.switchTab(3)
+		return model, cmd, true
 	case key.Matches(msg, m.keys.NextPane):
 		m.cycleFocus(1)
-		return m, nil
+		return m, nil, true
 	case key.Matches(msg, m.keys.PrevPane):
 		m.cycleFocus(-1)
-		return m, nil
+		return m, nil, true
+	}
+	return m, nil, false
+}
 
-	// Acknowledge (only on alerts tab)
+// handleActionKeys handles acknowledge, filter, edit, and other actions.
+func (m Model) handleActionKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd, bool) {
+	switch {
 	case key.Matches(msg, m.keys.Acknowledge):
 		if m.tabBar.Active() == TabAlerts && m.alertList.Selected() != nil {
-			return m, m.acknowledgeProblem("")
+			return m, m.acknowledgeProblem(""), true
 		}
-		return m, nil
-
+		return m, nil, true
 	case key.Matches(msg, m.keys.AckMessage):
 		if m.tabBar.Active() == TabAlerts && m.alertList.Selected() != nil {
 			m.mode = ModeAckMessage
 			m.commandInput.SetMode(command.ModeAckMessage)
 		}
-		return m, nil
-
-	// Filter mode
+		return m, nil, true
 	case key.Matches(msg, m.keys.Filter):
 		m.mode = ModeFilter
 		m.commandInput.SetMode(command.ModeFilter)
-		return m, nil
-
-	// Command mode
+		return m, nil, true
 	case key.Matches(msg, m.keys.Command):
 		m.mode = ModeCommand
 		m.commandInput.SetMode(command.ModeCommand)
-		return m, nil
-
-	// Severity filter (0-5) - only on alerts tab
+		return m, nil, true
 	case key.Matches(msg, m.keys.SeverityFilter):
-		if m.tabBar.Active() == TabAlerts {
-			if severity, err := strconv.Atoi(msg.String()); err == nil {
-				m.minSeverity = severity
-				m.alertList.SetMinSeverity(severity)
-				m.statusBar.SetFilter(m.minSeverity, m.textFilter)
-			}
-		}
-		return m, nil
-
-	// Host editing - works on Hosts tab and Alerts tab (for the alert's host)
+		return m.handleSeverityFilter(msg)
 	case key.Matches(msg, m.keys.EditTriggers):
-		hostID, triggerID := m.getSelectedHostAndTriggerID()
-		if hostID != "" {
-			return m, m.loadHostTriggers(hostID, triggerID)
-		}
-		return m, nil
-
+		return m.handleEditTriggers()
 	case key.Matches(msg, m.keys.EditMacros):
-		hostID := m.getSelectedHostID()
-		if hostID != "" {
-			return m, m.loadHostMacros(hostID)
-		}
-		return m, nil
-
+		return m.handleEditMacros()
 	case key.Matches(msg, m.keys.ToggleMonitor):
-		if m.tabBar.Active() == TabHosts && m.hostList.Selected() != nil {
-			host := m.hostList.Selected()
-			if host.IsMonitored() {
-				return m, m.disableHost(host.HostID)
-			}
-			return m, m.enableHost(host.HostID)
-		}
-		// For alerts, we need to fetch the host first to check status
-		// For now, just show a message that this only works on Hosts tab
-		return m, nil
-
-	// Clear filter
+		return m.handleToggleMonitor()
 	case key.Matches(msg, m.keys.ClearFilter):
-		m.minSeverity = 0
-		m.textFilter = ""
-		m.alertList.SetMinSeverity(0)
-		m.alertList.SetTextFilter("")
-		m.hostList.SetTextFilter("")
-		m.eventList.SetTextFilter("")
-		m.statusBar.SetFilter(0, "")
-		return m, nil
+		return m.handleClearFilter()
 	}
+	return m, nil, false
+}
 
-	// Forward to focused component
+// handleSeverityFilter handles severity filter keys (0-5).
+func (m Model) handleSeverityFilter(msg tea.KeyMsg) (tea.Model, tea.Cmd, bool) {
+	if m.tabBar.Active() == TabAlerts {
+		if severity, err := strconv.Atoi(msg.String()); err == nil {
+			m.minSeverity = severity
+			m.alertList.SetMinSeverity(severity)
+			m.statusBar.SetFilter(m.minSeverity, m.textFilter)
+		}
+	}
+	return m, nil, true
+}
+
+// handleEditTriggers opens the trigger editor.
+func (m Model) handleEditTriggers() (tea.Model, tea.Cmd, bool) {
+	hostID, triggerID := m.getSelectedHostAndTriggerID()
+	if hostID != "" {
+		return m, m.loadHostTriggers(hostID, triggerID), true
+	}
+	return m, nil, true
+}
+
+// handleEditMacros opens the macro editor.
+func (m Model) handleEditMacros() (tea.Model, tea.Cmd, bool) {
+	hostID := m.getSelectedHostID()
+	if hostID != "" {
+		return m, m.loadHostMacros(hostID), true
+	}
+	return m, nil, true
+}
+
+// handleToggleMonitor toggles host monitoring.
+func (m Model) handleToggleMonitor() (tea.Model, tea.Cmd, bool) {
+	if m.tabBar.Active() == TabHosts && m.hostList.Selected() != nil {
+		host := m.hostList.Selected()
+		if host.IsMonitored() {
+			return m, m.disableHost(host.HostID), true
+		}
+		return m, m.enableHost(host.HostID), true
+	}
+	return m, nil, true
+}
+
+// handleClearFilter clears all filters.
+func (m Model) handleClearFilter() (tea.Model, tea.Cmd, bool) {
+	m.minSeverity = 0
+	m.textFilter = ""
+	m.alertList.SetMinSeverity(0)
+	m.alertList.SetTextFilter("")
+	m.hostList.SetTextFilter("")
+	m.eventList.SetTextFilter("")
+	m.statusBar.SetFilter(0, "")
+	return m, nil, true
+}
+
+// forwardToFocusedComponent forwards key events to the focused component.
+func (m Model) forwardToFocusedComponent(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch m.focused {
 	case PaneList:
 		return m.updateListPane(msg)
@@ -519,7 +601,6 @@ func (m Model) handleKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.detailPane, cmd = m.detailPane.Update(msg)
 		return m, cmd
 	}
-
 	return m, nil
 }
 
