@@ -58,11 +58,11 @@ gh pr create --title "feat: description" --body "..." && gh pr merge --squash --
 - [x] Hosts tab view (UI exists, needs data integration)
 - [x] Events/History tab view
 - [x] Graphs tab view
+- [x] Mouse support (click tabs, items, tree nodes; scroll wheel)
 
 ### TODO
 
 - [ ] Add CI, codecov, and code quality badges to README
-- [ ] Investigate mouse support
 
 ### Known Issues
 
@@ -266,6 +266,14 @@ Important: BubbleTea uses value semantics for models. When returning `tea.Cmd` f
 | `Enter`/`Space` | Toggle expand/collapse |
 | `E` | Expand all |
 | `C` | Collapse all |
+
+### Mouse Support
+
+- **Click tabs** to switch between tabs
+- **Click list items** to select them
+- **Click tree nodes** to select and expand/collapse (Graphs tab)
+- **Click panes** to change focus
+- **Scroll wheel** scrolls the pane under the mouse cursor (3 lines per tick)
 
 ---
 
