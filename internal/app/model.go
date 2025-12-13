@@ -361,8 +361,8 @@ func (m *Model) SetSize(width, height int) {
 	commandHeight := 1
 	contentHeight := height - statusBarHeight - tabBarHeight - commandHeight - 4 // borders
 
-	// Split width: 60% list, 40% detail
-	listWidth := (width - 3) * 60 / 100
+	// Split width: 45% list, 55% detail
+	listWidth := (width - 3) * 45 / 100
 	detailWidth := width - listWidth - 3
 
 	m.alertList.SetSize(listWidth, contentHeight)
