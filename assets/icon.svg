@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 22 22">
+  <!-- Main red background -->
+  <rect x="0" y="0" width="22" height="22" fill="#d40000"/>
+
+  <!-- Spleen 8x16 $ sign centered, 1px per pixel -->
+  <!-- $ from BDF: 10,7E,D0,D0,D0,7C,16,16,16,16,FC,10 -->
+  <!-- Centered at x=5 -->
+
+  <!-- Row 0: 10 = 00010000 -->
+  <rect x="8" y="3" width="1" height="1" fill="#fff"/>
+  <!-- Row 1: 7E = 01111110 -->
+  <rect x="6" y="4" width="1" height="1" fill="#fff"/>
+  <rect x="7" y="4" width="1" height="1" fill="#fff"/>
+  <rect x="8" y="4" width="1" height="1" fill="#fff"/>
+  <rect x="9" y="4" width="1" height="1" fill="#fff"/>
+  <rect x="10" y="4" width="1" height="1" fill="#fff"/>
+  <rect x="11" y="4" width="1" height="1" fill="#fff"/>
+  <!-- Row 2: D0 = 11010000 -->
+  <rect x="5" y="5" width="1" height="1" fill="#fff"/>
+  <rect x="6" y="5" width="1" height="1" fill="#fff"/>
+  <rect x="8" y="5" width="1" height="1" fill="#fff"/>
+  <!-- Row 3: D0 -->
+  <rect x="5" y="6" width="1" height="1" fill="#fff"/>
+  <rect x="6" y="6" width="1" height="1" fill="#fff"/>
+  <rect x="8" y="6" width="1" height="1" fill="#fff"/>
+  <!-- Row 4: D0 -->
+  <rect x="5" y="7" width="1" height="1" fill="#fff"/>
+  <rect x="6" y="7" width="1" height="1" fill="#fff"/>
+  <rect x="8" y="7" width="1" height="1" fill="#fff"/>
+  <!-- Row 5: 7C = 01111100 -->
+  <rect x="6" y="8" width="1" height="1" fill="#fff"/>
+  <rect x="7" y="8" width="1" height="1" fill="#fff"/>
+  <rect x="8" y="8" width="1" height="1" fill="#fff"/>
+  <rect x="9" y="8" width="1" height="1" fill="#fff"/>
+  <rect x="10" y="8" width="1" height="1" fill="#fff"/>
+  <!-- Row 6: 16 = 00010110 -->
+  <rect x="8" y="9" width="1" height="1" fill="#fff"/>
+  <rect x="10" y="9" width="1" height="1" fill="#fff"/>
+  <rect x="11" y="9" width="1" height="1" fill="#fff"/>
+  <!-- Row 7: 16 -->
+  <rect x="8" y="10" width="1" height="1" fill="#fff"/>
+  <rect x="10" y="10" width="1" height="1" fill="#fff"/>
+  <rect x="11" y="10" width="1" height="1" fill="#fff"/>
+  <!-- Row 8: 16 -->
+  <rect x="8" y="11" width="1" height="1" fill="#fff"/>
+  <rect x="10" y="11" width="1" height="1" fill="#fff"/>
+  <rect x="11" y="11" width="1" height="1" fill="#fff"/>
+  <!-- Row 9: 16 -->
+  <rect x="8" y="12" width="1" height="1" fill="#fff"/>
+  <rect x="10" y="12" width="1" height="1" fill="#fff"/>
+  <rect x="11" y="12" width="1" height="1" fill="#fff"/>
+  <!-- Row 10: FC = 11111100 -->
+  <rect x="5" y="13" width="1" height="1" fill="#fff"/>
+  <rect x="6" y="13" width="1" height="1" fill="#fff"/>
+  <rect x="7" y="13" width="1" height="1" fill="#fff"/>
+  <rect x="8" y="13" width="1" height="1" fill="#fff"/>
+  <rect x="9" y="13" width="1" height="1" fill="#fff"/>
+  <rect x="10" y="13" width="1" height="1" fill="#fff"/>
+  <!-- Row 11: 10 -->
+  <rect x="8" y="14" width="1" height="1" fill="#fff"/>
+
+  <!-- Blinking cursor -->
+  <rect x="14" y="4" width="2" height="11" fill="#fff">
+    <animate attributeName="opacity" values="0.9;0.1;0.9" dur="1s" repeatCount="indefinite"/>
+  </rect>
+</svg>

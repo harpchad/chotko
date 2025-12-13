@@ -132,36 +132,7 @@ Built-in themes:
 - `tokyonight` - Cool blues and purples
 - `solarized` - Precision-balanced
 
-### Custom Themes
-
-Create a custom theme in `~/.config/chotko/themes/mytheme.yaml`:
-
-```yaml
-name: "mytheme"
-description: "My custom theme"
-
-colors:
-  disaster: "#FF0000"
-  high: "#FF6600"
-  average: "#FFAA00"
-  warning: "#FFCC00"
-  information: "#6699FF"
-  not_classified: "#999999"
-  ok: "#00CC00"
-  unknown: "#AAAAAA"
-  maintenance: "#AA66FF"
-  primary: "#6699FF"
-  secondary: "#00CC00"
-  background: "#1a1a1a"
-  foreground: "#EEEEEE"
-  muted: "#666666"
-  border: "#444444"
-  focused_border: "#6699FF"
-  highlight: "#333366"
-  surface: "#2a2a2a"
-```
-
-Then use it with `--theme mytheme` or set in config.
+See [THEMES.md](THEMES.md) for theme previews and custom theme documentation.
 
 ## Requirements
 

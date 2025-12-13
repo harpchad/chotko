@@ -1,0 +1,341 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 90 22">
+  <!-- Main red bar -->
+  <rect x="0" y="0" width="90" height="22" fill="#d40000"/>
+
+  <!-- Spleen 8x16 font, 1px per pixel, chars are 8w x 12h (visible area rows 2-13) -->
+  <!-- Characters: $ (space) C H O T K O | -->
+  <!-- Padding: ~2px each side -->
+
+  <!-- $ sign (x=2, from BDF: 10,7E,D0,D0,D0,7C,16,16,16,16,FC,10) -->
+  <!-- Row 0: 10 = 00010000 -->
+  <rect x="5" y="2" width="1" height="1" fill="#fff"/>
+  <!-- Row 1: 7E = 01111110 -->
+  <rect x="3" y="3" width="1" height="1" fill="#fff"/>
+  <rect x="4" y="3" width="1" height="1" fill="#fff"/>
+  <rect x="5" y="3" width="1" height="1" fill="#fff"/>
+  <rect x="6" y="3" width="1" height="1" fill="#fff"/>
+  <rect x="7" y="3" width="1" height="1" fill="#fff"/>
+  <rect x="8" y="3" width="1" height="1" fill="#fff"/>
+  <!-- Row 2: D0 = 11010000 -->
+  <rect x="2" y="4" width="1" height="1" fill="#fff"/>
+  <rect x="3" y="4" width="1" height="1" fill="#fff"/>
+  <rect x="5" y="4" width="1" height="1" fill="#fff"/>
+  <!-- Row 3: D0 -->
+  <rect x="2" y="5" width="1" height="1" fill="#fff"/>
+  <rect x="3" y="5" width="1" height="1" fill="#fff"/>
+  <rect x="5" y="5" width="1" height="1" fill="#fff"/>
+  <!-- Row 4: D0 -->
+  <rect x="2" y="6" width="1" height="1" fill="#fff"/>
+  <rect x="3" y="6" width="1" height="1" fill="#fff"/>
+  <rect x="5" y="6" width="1" height="1" fill="#fff"/>
+  <!-- Row 5: 7C = 01111100 -->
+  <rect x="3" y="7" width="1" height="1" fill="#fff"/>
+  <rect x="4" y="7" width="1" height="1" fill="#fff"/>
+  <rect x="5" y="7" width="1" height="1" fill="#fff"/>
+  <rect x="6" y="7" width="1" height="1" fill="#fff"/>
+  <rect x="7" y="7" width="1" height="1" fill="#fff"/>
+  <!-- Row 6: 16 = 00010110 -->
+  <rect x="5" y="8" width="1" height="1" fill="#fff"/>
+  <rect x="7" y="8" width="1" height="1" fill="#fff"/>
+  <rect x="8" y="8" width="1" height="1" fill="#fff"/>
+  <!-- Row 7: 16 -->
+  <rect x="5" y="9" width="1" height="1" fill="#fff"/>
+  <rect x="7" y="9" width="1" height="1" fill="#fff"/>
+  <rect x="8" y="9" width="1" height="1" fill="#fff"/>
+  <!-- Row 8: 16 -->
+  <rect x="5" y="10" width="1" height="1" fill="#fff"/>
+  <rect x="7" y="10" width="1" height="1" fill="#fff"/>
+  <rect x="8" y="10" width="1" height="1" fill="#fff"/>
+  <!-- Row 9: 16 -->
+  <rect x="5" y="11" width="1" height="1" fill="#fff"/>
+  <rect x="7" y="11" width="1" height="1" fill="#fff"/>
+  <rect x="8" y="11" width="1" height="1" fill="#fff"/>
+  <!-- Row 10: FC = 11111100 -->
+  <rect x="2" y="12" width="1" height="1" fill="#fff"/>
+  <rect x="3" y="12" width="1" height="1" fill="#fff"/>
+  <rect x="4" y="12" width="1" height="1" fill="#fff"/>
+  <rect x="5" y="12" width="1" height="1" fill="#fff"/>
+  <rect x="6" y="12" width="1" height="1" fill="#fff"/>
+  <rect x="7" y="12" width="1" height="1" fill="#fff"/>
+  <!-- Row 11: 10 -->
+  <rect x="5" y="13" width="1" height="1" fill="#fff"/>
+
+  <!-- Space (8 pixels) x=10 to x=18 -->
+
+  <!-- C (x=18, from BDF: 7E,C0,C0,C0,C0,C0,C0,C0,C0,7E) -->
+  <!-- Row 0: 7E = 01111110 -->
+  <rect x="19" y="3" width="1" height="1" fill="#fff"/>
+  <rect x="20" y="3" width="1" height="1" fill="#fff"/>
+  <rect x="21" y="3" width="1" height="1" fill="#fff"/>
+  <rect x="22" y="3" width="1" height="1" fill="#fff"/>
+  <rect x="23" y="3" width="1" height="1" fill="#fff"/>
+  <rect x="24" y="3" width="1" height="1" fill="#fff"/>
+  <!-- Rows 1-8: C0 = 11000000 -->
+  <rect x="18" y="4" width="1" height="1" fill="#fff"/>
+  <rect x="19" y="4" width="1" height="1" fill="#fff"/>
+  <rect x="18" y="5" width="1" height="1" fill="#fff"/>
+  <rect x="19" y="5" width="1" height="1" fill="#fff"/>
+  <rect x="18" y="6" width="1" height="1" fill="#fff"/>
+  <rect x="19" y="6" width="1" height="1" fill="#fff"/>
+  <rect x="18" y="7" width="1" height="1" fill="#fff"/>
+  <rect x="19" y="7" width="1" height="1" fill="#fff"/>
+  <rect x="18" y="8" width="1" height="1" fill="#fff"/>
+  <rect x="19" y="8" width="1" height="1" fill="#fff"/>
+  <rect x="18" y="9" width="1" height="1" fill="#fff"/>
+  <rect x="19" y="9" width="1" height="1" fill="#fff"/>
+  <rect x="18" y="10" width="1" height="1" fill="#fff"/>
+  <rect x="19" y="10" width="1" height="1" fill="#fff"/>
+  <rect x="18" y="11" width="1" height="1" fill="#fff"/>
+  <rect x="19" y="11" width="1" height="1" fill="#fff"/>
+  <!-- Row 9: 7E -->
+  <rect x="19" y="12" width="1" height="1" fill="#fff"/>
+  <rect x="20" y="12" width="1" height="1" fill="#fff"/>
+  <rect x="21" y="12" width="1" height="1" fill="#fff"/>
+  <rect x="22" y="12" width="1" height="1" fill="#fff"/>
+  <rect x="23" y="12" width="1" height="1" fill="#fff"/>
+  <rect x="24" y="12" width="1" height="1" fill="#fff"/>
+
+  <!-- H (x=26, from BDF: C6,C6,C6,C6,FE,C6,C6,C6,C6,C6) -->
+  <!-- C6 = 11000110 -->
+  <rect x="26" y="3" width="1" height="1" fill="#fff"/>
+  <rect x="27" y="3" width="1" height="1" fill="#fff"/>
+  <rect x="31" y="3" width="1" height="1" fill="#fff"/>
+  <rect x="32" y="3" width="1" height="1" fill="#fff"/>
+  <rect x="26" y="4" width="1" height="1" fill="#fff"/>
+  <rect x="27" y="4" width="1" height="1" fill="#fff"/>
+  <rect x="31" y="4" width="1" height="1" fill="#fff"/>
+  <rect x="32" y="4" width="1" height="1" fill="#fff"/>
+  <rect x="26" y="5" width="1" height="1" fill="#fff"/>
+  <rect x="27" y="5" width="1" height="1" fill="#fff"/>
+  <rect x="31" y="5" width="1" height="1" fill="#fff"/>
+  <rect x="32" y="5" width="1" height="1" fill="#fff"/>
+  <rect x="26" y="6" width="1" height="1" fill="#fff"/>
+  <rect x="27" y="6" width="1" height="1" fill="#fff"/>
+  <rect x="31" y="6" width="1" height="1" fill="#fff"/>
+  <rect x="32" y="6" width="1" height="1" fill="#fff"/>
+  <!-- FE = 11111110 -->
+  <rect x="26" y="7" width="1" height="1" fill="#fff"/>
+  <rect x="27" y="7" width="1" height="1" fill="#fff"/>
+  <rect x="28" y="7" width="1" height="1" fill="#fff"/>
+  <rect x="29" y="7" width="1" height="1" fill="#fff"/>
+  <rect x="30" y="7" width="1" height="1" fill="#fff"/>
+  <rect x="31" y="7" width="1" height="1" fill="#fff"/>
+  <rect x="32" y="7" width="1" height="1" fill="#fff"/>
+  <!-- C6 rows -->
+  <rect x="26" y="8" width="1" height="1" fill="#fff"/>
+  <rect x="27" y="8" width="1" height="1" fill="#fff"/>
+  <rect x="31" y="8" width="1" height="1" fill="#fff"/>
+  <rect x="32" y="8" width="1" height="1" fill="#fff"/>
+  <rect x="26" y="9" width="1" height="1" fill="#fff"/>
+  <rect x="27" y="9" width="1" height="1" fill="#fff"/>
+  <rect x="31" y="9" width="1" height="1" fill="#fff"/>
+  <rect x="32" y="9" width="1" height="1" fill="#fff"/>
+  <rect x="26" y="10" width="1" height="1" fill="#fff"/>
+  <rect x="27" y="10" width="1" height="1" fill="#fff"/>
+  <rect x="31" y="10" width="1" height="1" fill="#fff"/>
+  <rect x="32" y="10" width="1" height="1" fill="#fff"/>
+  <rect x="26" y="11" width="1" height="1" fill="#fff"/>
+  <rect x="27" y="11" width="1" height="1" fill="#fff"/>
+  <rect x="31" y="11" width="1" height="1" fill="#fff"/>
+  <rect x="32" y="11" width="1" height="1" fill="#fff"/>
+  <rect x="26" y="12" width="1" height="1" fill="#fff"/>
+  <rect x="27" y="12" width="1" height="1" fill="#fff"/>
+  <rect x="31" y="12" width="1" height="1" fill="#fff"/>
+  <rect x="32" y="12" width="1" height="1" fill="#fff"/>
+
+  <!-- O (x=34, from BDF: 7C,C6,C6,C6,C6,C6,C6,C6,C6,7C) -->
+  <!-- 7C = 01111100 -->
+  <rect x="35" y="3" width="1" height="1" fill="#fff"/>
+  <rect x="36" y="3" width="1" height="1" fill="#fff"/>
+  <rect x="37" y="3" width="1" height="1" fill="#fff"/>
+  <rect x="38" y="3" width="1" height="1" fill="#fff"/>
+  <rect x="39" y="3" width="1" height="1" fill="#fff"/>
+  <!-- C6 = 11000110 rows -->
+  <rect x="34" y="4" width="1" height="1" fill="#fff"/>
+  <rect x="35" y="4" width="1" height="1" fill="#fff"/>
+  <rect x="39" y="4" width="1" height="1" fill="#fff"/>
+  <rect x="40" y="4" width="1" height="1" fill="#fff"/>
+  <rect x="34" y="5" width="1" height="1" fill="#fff"/>
+  <rect x="35" y="5" width="1" height="1" fill="#fff"/>
+  <rect x="39" y="5" width="1" height="1" fill="#fff"/>
+  <rect x="40" y="5" width="1" height="1" fill="#fff"/>
+  <rect x="34" y="6" width="1" height="1" fill="#fff"/>
+  <rect x="35" y="6" width="1" height="1" fill="#fff"/>
+  <rect x="39" y="6" width="1" height="1" fill="#fff"/>
+  <rect x="40" y="6" width="1" height="1" fill="#fff"/>
+  <rect x="34" y="7" width="1" height="1" fill="#fff"/>
+  <rect x="35" y="7" width="1" height="1" fill="#fff"/>
+  <rect x="39" y="7" width="1" height="1" fill="#fff"/>
+  <rect x="40" y="7" width="1" height="1" fill="#fff"/>
+  <rect x="34" y="8" width="1" height="1" fill="#fff"/>
+  <rect x="35" y="8" width="1" height="1" fill="#fff"/>
+  <rect x="39" y="8" width="1" height="1" fill="#fff"/>
+  <rect x="40" y="8" width="1" height="1" fill="#fff"/>
+  <rect x="34" y="9" width="1" height="1" fill="#fff"/>
+  <rect x="35" y="9" width="1" height="1" fill="#fff"/>
+  <rect x="39" y="9" width="1" height="1" fill="#fff"/>
+  <rect x="40" y="9" width="1" height="1" fill="#fff"/>
+  <rect x="34" y="10" width="1" height="1" fill="#fff"/>
+  <rect x="35" y="10" width="1" height="1" fill="#fff"/>
+  <rect x="39" y="10" width="1" height="1" fill="#fff"/>
+  <rect x="40" y="10" width="1" height="1" fill="#fff"/>
+  <rect x="34" y="11" width="1" height="1" fill="#fff"/>
+  <rect x="35" y="11" width="1" height="1" fill="#fff"/>
+  <rect x="39" y="11" width="1" height="1" fill="#fff"/>
+  <rect x="40" y="11" width="1" height="1" fill="#fff"/>
+  <!-- 7C bottom -->
+  <rect x="35" y="12" width="1" height="1" fill="#fff"/>
+  <rect x="36" y="12" width="1" height="1" fill="#fff"/>
+  <rect x="37" y="12" width="1" height="1" fill="#fff"/>
+  <rect x="38" y="12" width="1" height="1" fill="#fff"/>
+  <rect x="39" y="12" width="1" height="1" fill="#fff"/>
+
+  <!-- T (x=42, from BDF: FF,18,18,18,18,18,18,18,18,18) -->
+  <!-- FF = 11111111 -->
+  <rect x="42" y="3" width="1" height="1" fill="#fff"/>
+  <rect x="43" y="3" width="1" height="1" fill="#fff"/>
+  <rect x="44" y="3" width="1" height="1" fill="#fff"/>
+  <rect x="45" y="3" width="1" height="1" fill="#fff"/>
+  <rect x="46" y="3" width="1" height="1" fill="#fff"/>
+  <rect x="47" y="3" width="1" height="1" fill="#fff"/>
+  <rect x="48" y="3" width="1" height="1" fill="#fff"/>
+  <rect x="49" y="3" width="1" height="1" fill="#fff"/>
+  <!-- 18 = 00011000 rows -->
+  <rect x="45" y="4" width="1" height="1" fill="#fff"/>
+  <rect x="46" y="4" width="1" height="1" fill="#fff"/>
+  <rect x="45" y="5" width="1" height="1" fill="#fff"/>
+  <rect x="46" y="5" width="1" height="1" fill="#fff"/>
+  <rect x="45" y="6" width="1" height="1" fill="#fff"/>
+  <rect x="46" y="6" width="1" height="1" fill="#fff"/>
+  <rect x="45" y="7" width="1" height="1" fill="#fff"/>
+  <rect x="46" y="7" width="1" height="1" fill="#fff"/>
+  <rect x="45" y="8" width="1" height="1" fill="#fff"/>
+  <rect x="46" y="8" width="1" height="1" fill="#fff"/>
+  <rect x="45" y="9" width="1" height="1" fill="#fff"/>
+  <rect x="46" y="9" width="1" height="1" fill="#fff"/>
+  <rect x="45" y="10" width="1" height="1" fill="#fff"/>
+  <rect x="46" y="10" width="1" height="1" fill="#fff"/>
+  <rect x="45" y="11" width="1" height="1" fill="#fff"/>
+  <rect x="46" y="11" width="1" height="1" fill="#fff"/>
+  <rect x="45" y="12" width="1" height="1" fill="#fff"/>
+  <rect x="46" y="12" width="1" height="1" fill="#fff"/>
+
+  <!-- K (x=50, from BDF: C6,C6,C6,CC,F8,CC,C6,C6,C6,C6) -->
+  <!-- C6 = 11000110 -->
+  <rect x="50" y="3" width="1" height="1" fill="#fff"/>
+  <rect x="51" y="3" width="1" height="1" fill="#fff"/>
+  <rect x="55" y="3" width="1" height="1" fill="#fff"/>
+  <rect x="56" y="3" width="1" height="1" fill="#fff"/>
+  <rect x="50" y="4" width="1" height="1" fill="#fff"/>
+  <rect x="51" y="4" width="1" height="1" fill="#fff"/>
+  <rect x="55" y="4" width="1" height="1" fill="#fff"/>
+  <rect x="56" y="4" width="1" height="1" fill="#fff"/>
+  <rect x="50" y="5" width="1" height="1" fill="#fff"/>
+  <rect x="51" y="5" width="1" height="1" fill="#fff"/>
+  <rect x="55" y="5" width="1" height="1" fill="#fff"/>
+  <rect x="56" y="5" width="1" height="1" fill="#fff"/>
+  <!-- CC = 11001100 -->
+  <rect x="50" y="6" width="1" height="1" fill="#fff"/>
+  <rect x="51" y="6" width="1" height="1" fill="#fff"/>
+  <rect x="54" y="6" width="1" height="1" fill="#fff"/>
+  <rect x="55" y="6" width="1" height="1" fill="#fff"/>
+  <!-- F8 = 11111000 -->
+  <rect x="50" y="7" width="1" height="1" fill="#fff"/>
+  <rect x="51" y="7" width="1" height="1" fill="#fff"/>
+  <rect x="52" y="7" width="1" height="1" fill="#fff"/>
+  <rect x="53" y="7" width="1" height="1" fill="#fff"/>
+  <rect x="54" y="7" width="1" height="1" fill="#fff"/>
+  <!-- CC -->
+  <rect x="50" y="8" width="1" height="1" fill="#fff"/>
+  <rect x="51" y="8" width="1" height="1" fill="#fff"/>
+  <rect x="54" y="8" width="1" height="1" fill="#fff"/>
+  <rect x="55" y="8" width="1" height="1" fill="#fff"/>
+  <!-- C6 rows -->
+  <rect x="50" y="9" width="1" height="1" fill="#fff"/>
+  <rect x="51" y="9" width="1" height="1" fill="#fff"/>
+  <rect x="55" y="9" width="1" height="1" fill="#fff"/>
+  <rect x="56" y="9" width="1" height="1" fill="#fff"/>
+  <rect x="50" y="10" width="1" height="1" fill="#fff"/>
+  <rect x="51" y="10" width="1" height="1" fill="#fff"/>
+  <rect x="55" y="10" width="1" height="1" fill="#fff"/>
+  <rect x="56" y="10" width="1" height="1" fill="#fff"/>
+  <rect x="50" y="11" width="1" height="1" fill="#fff"/>
+  <rect x="51" y="11" width="1" height="1" fill="#fff"/>
+  <rect x="55" y="11" width="1" height="1" fill="#fff"/>
+  <rect x="56" y="11" width="1" height="1" fill="#fff"/>
+  <rect x="50" y="12" width="1" height="1" fill="#fff"/>
+  <rect x="51" y="12" width="1" height="1" fill="#fff"/>
+  <rect x="55" y="12" width="1" height="1" fill="#fff"/>
+  <rect x="56" y="12" width="1" height="1" fill="#fff"/>
+
+  <!-- O (x=58, same as above) -->
+  <rect x="59" y="3" width="1" height="1" fill="#fff"/>
+  <rect x="60" y="3" width="1" height="1" fill="#fff"/>
+  <rect x="61" y="3" width="1" height="1" fill="#fff"/>
+  <rect x="62" y="3" width="1" height="1" fill="#fff"/>
+  <rect x="63" y="3" width="1" height="1" fill="#fff"/>
+  <rect x="58" y="4" width="1" height="1" fill="#fff"/>
+  <rect x="59" y="4" width="1" height="1" fill="#fff"/>
+  <rect x="63" y="4" width="1" height="1" fill="#fff"/>
+  <rect x="64" y="4" width="1" height="1" fill="#fff"/>
+  <rect x="58" y="5" width="1" height="1" fill="#fff"/>
+  <rect x="59" y="5" width="1" height="1" fill="#fff"/>
+  <rect x="63" y="5" width="1" height="1" fill="#fff"/>
+  <rect x="64" y="5" width="1" height="1" fill="#fff"/>
+  <rect x="58" y="6" width="1" height="1" fill="#fff"/>
+  <rect x="59" y="6" width="1" height="1" fill="#fff"/>
+  <rect x="63" y="6" width="1" height="1" fill="#fff"/>
+  <rect x="64" y="6" width="1" height="1" fill="#fff"/>
+  <rect x="58" y="7" width="1" height="1" fill="#fff"/>
+  <rect x="59" y="7" width="1" height="1" fill="#fff"/>
+  <rect x="63" y="7" width="1" height="1" fill="#fff"/>
+  <rect x="64" y="7" width="1" height="1" fill="#fff"/>
+  <rect x="58" y="8" width="1" height="1" fill="#fff"/>
+  <rect x="59" y="8" width="1" height="1" fill="#fff"/>
+  <rect x="63" y="8" width="1" height="1" fill="#fff"/>
+  <rect x="64" y="8" width="1" height="1" fill="#fff"/>
+  <rect x="58" y="9" width="1" height="1" fill="#fff"/>
+  <rect x="59" y="9" width="1" height="1" fill="#fff"/>
+  <rect x="63" y="9" width="1" height="1" fill="#fff"/>
+  <rect x="64" y="9" width="1" height="1" fill="#fff"/>
+  <rect x="58" y="10" width="1" height="1" fill="#fff"/>
+  <rect x="59" y="10" width="1" height="1" fill="#fff"/>
+  <rect x="63" y="10" width="1" height="1" fill="#fff"/>
+  <rect x="64" y="10" width="1" height="1" fill="#fff"/>
+  <rect x="58" y="11" width="1" height="1" fill="#fff"/>
+  <rect x="59" y="11" width="1" height="1" fill="#fff"/>
+  <rect x="63" y="11" width="1" height="1" fill="#fff"/>
+  <rect x="64" y="11" width="1" height="1" fill="#fff"/>
+  <rect x="59" y="12" width="1" height="1" fill="#fff"/>
+  <rect x="60" y="12" width="1" height="1" fill="#fff"/>
+  <rect x="61" y="12" width="1" height="1" fill="#fff"/>
+  <rect x="62" y="12" width="1" height="1" fill="#fff"/>
+  <rect x="63" y="12" width="1" height="1" fill="#fff"/>
+
+  <!-- Cursor | (x=66, from BDF: 18 all rows) -->
+  <rect x="69" y="3" width="1" height="1" fill="#fff" opacity="0.9"/>
+  <rect x="70" y="3" width="1" height="1" fill="#fff" opacity="0.9"/>
+  <rect x="69" y="4" width="1" height="1" fill="#fff" opacity="0.9"/>
+  <rect x="70" y="4" width="1" height="1" fill="#fff" opacity="0.9"/>
+  <rect x="69" y="5" width="1" height="1" fill="#fff" opacity="0.9"/>
+  <rect x="70" y="5" width="1" height="1" fill="#fff" opacity="0.9"/>
+  <rect x="69" y="6" width="1" height="1" fill="#fff" opacity="0.9"/>
+  <rect x="70" y="6" width="1" height="1" fill="#fff" opacity="0.9"/>
+  <rect x="69" y="7" width="1" height="1" fill="#fff" opacity="0.9"/>
+  <rect x="70" y="7" width="1" height="1" fill="#fff" opacity="0.9"/>
+  <rect x="69" y="8" width="1" height="1" fill="#fff" opacity="0.9"/>
+  <rect x="70" y="8" width="1" height="1" fill="#fff" opacity="0.9"/>
+  <rect x="69" y="9" width="1" height="1" fill="#fff" opacity="0.9"/>
+  <rect x="70" y="9" width="1" height="1" fill="#fff" opacity="0.9"/>
+  <rect x="69" y="10" width="1" height="1" fill="#fff" opacity="0.9"/>
+  <rect x="70" y="10" width="1" height="1" fill="#fff" opacity="0.9"/>
+  <rect x="69" y="11" width="1" height="1" fill="#fff" opacity="0.9"/>
+  <rect x="70" y="11" width="1" height="1" fill="#fff" opacity="0.9"/>
+  <rect x="69" y="12" width="1" height="1" fill="#fff" opacity="0.9"/>
+  <rect x="70" y="12" width="1" height="1" fill="#fff" opacity="0.9"/>
+
+  <!-- Blinking animation for cursor -->
+  <rect x="69" y="3" width="2" height="10" fill="#fff">
+    <animate attributeName="opacity" values="0.9;0.1;0.9" dur="1s" repeatCount="indefinite"/>
+  </rect>
+</svg>
