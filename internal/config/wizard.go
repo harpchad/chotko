@@ -25,7 +25,10 @@ func RunWizard() (*Config, error) {
 
 	// Server URL
 	fmt.Print("Zabbix Server URL (e.g., https://zabbix.example.com): ")
-	url, _ := reader.ReadString('\n')
+	url, err := reader.ReadString('\n')
+	if err != nil {
+		return nil, fmt.Errorf("failed to read server URL: %w", err)
+	}
 	url = strings.TrimSpace(url)
 	if url == "" {
 		return nil, fmt.Errorf("server URL is required")
@@ -40,7 +43,10 @@ func RunWizard() (*Config, error) {
 	fmt.Println("  1. API Token (recommended for Zabbix 5.4+)")
 	fmt.Println("  2. Username/Password")
 	fmt.Print("Select [1/2]: ")
-	authChoice, _ := reader.ReadString('\n')
+	authChoice, err := reader.ReadString('\n')
+	if err != nil {
+		return nil, fmt.Errorf("failed to read auth choice: %w", err)
+	}
 	authChoice = strings.TrimSpace(authChoice)
 
 	if authChoice == "1" || authChoice == "" {
@@ -51,7 +57,10 @@ func RunWizard() (*Config, error) {
 		fmt.Println("  3. Create a new token")
 		fmt.Println()
 		fmt.Print("API Token: ")
-		token, _ := reader.ReadString('\n')
+		token, err := reader.ReadString('\n')
+		if err != nil {
+			return nil, fmt.Errorf("failed to read API token: %w", err)
+		}
 		token = strings.TrimSpace(token)
 		if token == "" {
 			return nil, fmt.Errorf("API token is required")
@@ -60,7 +69,10 @@ func RunWizard() (*Config, error) {
 	} else {
 		fmt.Println()
 		fmt.Print("Username: ")
-		username, _ := reader.ReadString('\n')
+		username, err := reader.ReadString('\n')
+		if err != nil {
+			return nil, fmt.Errorf("failed to read username: %w", err)
+		}
 		username = strings.TrimSpace(username)
 		if username == "" {
 			return nil, fmt.Errorf("username is required")
@@ -68,7 +80,10 @@ func RunWizard() (*Config, error) {
 		cfg.Auth.Username = username
 
 		fmt.Print("Password: ")
-		password, _ := reader.ReadString('\n')
+		password, err := reader.ReadString('\n')
+		if err != nil {
+			return nil, fmt.Errorf("failed to read password: %w", err)
+		}
 		password = strings.TrimSpace(password)
 		if password == "" {
 			return nil, fmt.Errorf("password is required")
@@ -84,31 +99,36 @@ func RunWizard() (*Config, error) {
 		fmt.Printf("  %d. %s\n", i+1, t)
 	}
 	fmt.Print("Select theme [1-7, default=2 (nord)]: ")
-	themeChoice, _ := reader.ReadString('\n')
+	themeChoice, err := reader.ReadString('\n')
+	if err != nil {
+		return nil, fmt.Errorf("failed to read theme choice: %w", err)
+	}
 	themeChoice = strings.TrimSpace(themeChoice)
 
-	if themeChoice == "" {
-		cfg.Display.Theme = "nord"
-	} else {
+	cfg.Display.Theme = "nord" // default
+	if themeChoice != "" {
 		var idx int
-		_, _ = fmt.Sscanf(themeChoice, "%d", &idx)
-		if idx >= 1 && idx <= len(themes) {
-			cfg.Display.Theme = themes[idx-1]
-		} else {
-			cfg.Display.Theme = "nord"
+		if _, parseErr := fmt.Sscanf(themeChoice, "%d", &idx); parseErr == nil {
+			if idx >= 1 && idx <= len(themes) {
+				cfg.Display.Theme = themes[idx-1]
+			}
 		}
 	}
 
 	// Refresh interval
 	fmt.Println()
 	fmt.Print("Refresh interval in seconds [30]: ")
-	refreshStr, _ := reader.ReadString('\n')
+	refreshStr, err := reader.ReadString('\n')
+	if err != nil {
+		return nil, fmt.Errorf("failed to read refresh interval: %w", err)
+	}
 	refreshStr = strings.TrimSpace(refreshStr)
 	if refreshStr != "" {
 		var refresh int
-		_, _ = fmt.Sscanf(refreshStr, "%d", &refresh)
-		if refresh >= 5 {
-			cfg.Display.RefreshInterval = refresh
+		if _, parseErr := fmt.Sscanf(refreshStr, "%d", &refresh); parseErr == nil {
+			if refresh >= MinRefreshInterval {
+				cfg.Display.RefreshInterval = refresh
+			}
 		}
 	}
 
@@ -147,7 +167,10 @@ func PromptForConfig() bool {
 	fmt.Println()
 	fmt.Print("Would you like to run the setup wizard? [Y/n]: ")
 
-	response, _ := reader.ReadString('\n')
+	response, err := reader.ReadString('\n')
+	if err != nil {
+		return false
+	}
 	response = strings.TrimSpace(strings.ToLower(response))
 
 	return response == "" || response == "y" || response == "yes"

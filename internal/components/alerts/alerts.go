@@ -91,6 +91,9 @@ func (m *Model) applyFilter() {
 }
 
 // Selected returns the currently selected problem.
+// Returns a pointer to the element in the filtered slice. The pointer remains
+// valid until the next call to SetProblems or filter changes. Callers should
+// not store this pointer long-term.
 func (m Model) Selected() *zabbix.Problem {
 	if m.cursor >= 0 && m.cursor < len(m.filtered) {
 		return &m.filtered[m.cursor]

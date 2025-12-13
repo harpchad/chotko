@@ -10,6 +10,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
+	"github.com/harpchad/chotko/internal/format"
 	"github.com/harpchad/chotko/internal/theme"
 	"github.com/harpchad/chotko/internal/zabbix"
 )
@@ -561,7 +562,7 @@ func (m Model) viewGraph() string {
 		lines = append(lines, m.renderField("Key", item.Key))
 
 		// Current value
-		value := formatItemValue(item.LastValueFloat(), item.Units)
+		value := format.Value(item.LastValueFloat(), item.Units)
 		lines = append(lines, m.renderField("Value", value))
 
 		// Last update
@@ -633,9 +634,9 @@ func (m Model) viewGraph() string {
 			// Calculate stats
 			minVal, maxVal, avgVal := calcStats(m.history)
 			statsLine := fmt.Sprintf("Min: %s  Max: %s  Avg: %s",
-				formatItemValue(minVal, item.Units),
-				formatItemValue(maxVal, item.Units),
-				formatItemValue(avgVal, item.Units))
+				format.Value(minVal, item.Units),
+				format.Value(maxVal, item.Units),
+				format.Value(avgVal, item.Units))
 			lines = append(lines, m.styles.Subtle.Render(statsLine))
 		}
 
@@ -643,53 +644,6 @@ func (m Model) viewGraph() string {
 	}
 
 	return m.renderPane(b.String())
-}
-
-// formatItemValue formats a numeric value with appropriate units.
-func formatItemValue(value float64, units string) string {
-	// Handle percentage
-	if units == "%" {
-		return fmt.Sprintf("%.1f%%", value)
-	}
-
-	// Handle bytes
-	if units == "B" || units == "Bps" {
-		return formatBytesValue(value) + strings.TrimPrefix(units, "B")
-	}
-
-	// Handle time units
-	if units == "s" {
-		if value < 1 {
-			return fmt.Sprintf("%.0fms", value*1000)
-		}
-		return fmt.Sprintf("%.2fs", value)
-	}
-
-	// Default formatting
-	if value >= 1000000 {
-		return fmt.Sprintf("%.1fM", value/1000000)
-	}
-	if value >= 1000 {
-		return fmt.Sprintf("%.1fK", value/1000)
-	}
-	if value == float64(int64(value)) {
-		return fmt.Sprintf("%.0f", value)
-	}
-	return fmt.Sprintf("%.2f", value)
-}
-
-// formatBytesValue formats bytes to human-readable form.
-func formatBytesValue(bytes float64) string {
-	const unit = 1024
-	if bytes < unit {
-		return fmt.Sprintf("%.0f", bytes)
-	}
-	div, exp := float64(unit), 0
-	for n := bytes / unit; n >= unit; n /= unit {
-		div *= unit
-		exp++
-	}
-	return fmt.Sprintf("%.1f%c", bytes/div, "KMGTPE"[exp])
 }
 
 // calcStats calculates minVal, maxVal, avgVal for history data.
@@ -721,56 +675,6 @@ func calcStats(history []zabbix.History) (minVal, maxVal, avgVal float64) {
 // values in human-readable form (e.g., 16G instead of 16000000000).
 func humanReadableYLabelFormatter(units string) linechart.LabelFormatter {
 	return func(_ int, v float64) string {
-		return formatYValue(v, units)
+		return format.YAxisValue(v, units)
 	}
-}
-
-// formatYValue formats a value for the Y axis label with appropriate SI suffixes.
-func formatYValue(value float64, units string) string {
-	// Handle bytes specially - use binary prefixes (Ki, Mi, Gi)
-	if units == "B" || units == "Bps" {
-		return formatBytesShort(value)
-	}
-
-	// Handle percentages
-	if units == "%" {
-		return fmt.Sprintf("%.0f%%", value)
-	}
-
-	// For other values, use SI prefixes
-	absVal := value
-	if absVal < 0 {
-		absVal = -absVal
-	}
-
-	switch {
-	case absVal >= 1e12:
-		return fmt.Sprintf("%.1fT", value/1e12)
-	case absVal >= 1e9:
-		return fmt.Sprintf("%.1fG", value/1e9)
-	case absVal >= 1e6:
-		return fmt.Sprintf("%.1fM", value/1e6)
-	case absVal >= 1e3:
-		return fmt.Sprintf("%.1fK", value/1e3)
-	case absVal >= 1:
-		return fmt.Sprintf("%.0f", value)
-	case absVal >= 0.01:
-		return fmt.Sprintf("%.2f", value)
-	default:
-		return fmt.Sprintf("%.0f", value)
-	}
-}
-
-// formatBytesShort formats bytes to short human-readable form for axis labels.
-func formatBytesShort(bytes float64) string {
-	const unit = 1024
-	if bytes < unit {
-		return fmt.Sprintf("%.0f", bytes)
-	}
-	div, exp := float64(unit), 0
-	for n := bytes / unit; n >= unit && exp < 5; n /= unit {
-		div *= unit
-		exp++
-	}
-	return fmt.Sprintf("%.1f%c", bytes/div, "KMGTP"[exp])
 }

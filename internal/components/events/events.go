@@ -81,6 +81,9 @@ func (m *Model) applyFilter() {
 }
 
 // Selected returns the currently selected event.
+// Returns a pointer to the element in the filtered slice. The pointer remains
+// valid until the next call to SetEvents or filter changes. Callers should
+// not store this pointer long-term.
 func (m Model) Selected() *zabbix.Event {
 	if m.cursor >= 0 && m.cursor < len(m.filtered) {
 		return &m.filtered[m.cursor]

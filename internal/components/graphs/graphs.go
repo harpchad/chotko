@@ -10,6 +10,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	zone "github.com/lrstanley/bubblezone"
 
+	"github.com/harpchad/chotko/internal/format"
 	"github.com/harpchad/chotko/internal/theme"
 	"github.com/harpchad/chotko/internal/zabbix"
 )
@@ -439,7 +440,7 @@ func (m Model) renderItemNode(node *TreeNode, selected bool) string {
 	item := node.Item
 
 	// Format value with units
-	value := formatValue(item.LastValueFloat(), item.Units)
+	value := format.Value(item.LastValueFloat(), item.Units)
 
 	// Get sparkline if available
 	spark := ""
@@ -475,53 +476,6 @@ func (m Model) renderItemNode(node *TreeNode, selected bool) string {
 	sparkStyle := m.styles.Subtle.Width(sparkWidth)
 
 	return nameStyle.Render(name) + valueStyle.Render(value) + "  " + sparkStyle.Render(spark)
-}
-
-// formatValue formats a numeric value with appropriate units.
-func formatValue(value float64, units string) string {
-	// Handle percentage
-	if units == "%" {
-		return fmt.Sprintf("%.1f%%", value)
-	}
-
-	// Handle bytes
-	if units == "B" || units == "Bps" {
-		return formatBytes(value) + strings.TrimPrefix(units, "B")
-	}
-
-	// Handle time units
-	if units == "s" {
-		if value < 1 {
-			return fmt.Sprintf("%.0fms", value*1000)
-		}
-		return fmt.Sprintf("%.2fs", value)
-	}
-
-	// Default formatting
-	if value >= 1000000 {
-		return fmt.Sprintf("%.1fM", value/1000000)
-	}
-	if value >= 1000 {
-		return fmt.Sprintf("%.1fK", value/1000)
-	}
-	if value == float64(int64(value)) {
-		return fmt.Sprintf("%.0f", value)
-	}
-	return fmt.Sprintf("%.2f", value)
-}
-
-// formatBytes formats bytes to human-readable form.
-func formatBytes(bytes float64) string {
-	const unit = 1024
-	if bytes < unit {
-		return fmt.Sprintf("%.0f", bytes)
-	}
-	div, exp := float64(unit), 0
-	for n := bytes / unit; n >= unit; n /= unit {
-		div *= unit
-		exp++
-	}
-	return fmt.Sprintf("%.1f%c", bytes/div, "KMGTPE"[exp])
 }
 
 // GetHistory returns the history data for an item.

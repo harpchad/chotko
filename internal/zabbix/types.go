@@ -151,8 +151,14 @@ const (
 )
 
 // Helper methods
+//
+// Note: Zabbix API returns numeric values as strings. The helper methods below
+// convert these strings to appropriate Go types. Parse errors are intentionally
+// ignored, returning zero values, since invalid data from the API should be
+// treated as "no data" rather than causing errors.
 
-// SeverityInt returns the severity as an integer.
+// SeverityInt returns the severity as an integer (0-5).
+// Returns 0 if the severity string is empty or invalid.
 func (p *Problem) SeverityInt() int {
 	s, _ := strconv.Atoi(p.Severity)
 	return s
@@ -169,6 +175,7 @@ func (p *Problem) IsSuppressed() bool {
 }
 
 // StartTime returns the problem start time.
+// Returns zero time if the clock string is empty or invalid.
 func (p *Problem) StartTime() time.Time {
 	ts, _ := strconv.ParseInt(p.Clock, 10, 64)
 	if ts <= 0 {
@@ -287,6 +294,7 @@ func (h *Host) IsAvailable() int {
 
 	// Fallback to active_available for hosts without interface data
 	// (shouldn't happen with proper selectInterfaces, but just in case)
+	// Returns 0 (unknown) if ActiveAvailable is empty or invalid
 	a, _ := strconv.Atoi(h.ActiveAvailable)
 	return a
 }
@@ -305,6 +313,7 @@ func (p *Problem) IsRecovery() bool {
 }
 
 // RecoveryTime returns the recovery time if the problem was resolved.
+// Returns zero time if not resolved or if the clock string is invalid.
 func (p *Problem) RecoveryTime() time.Time {
 	if p.RClock == "" || p.RClock == "0" {
 		return time.Time{}
@@ -391,12 +400,14 @@ func (i *Item) IsSupported() bool {
 }
 
 // LastValueFloat returns the last value as a float64.
+// Returns 0 if the value string is empty or invalid.
 func (i *Item) LastValueFloat() float64 {
 	v, _ := strconv.ParseFloat(i.LastValue, 64)
 	return v
 }
 
 // LastTime returns the last data collection time.
+// Returns zero time if the clock string is empty or invalid.
 func (i *Item) LastTime() time.Time {
 	ts, _ := strconv.ParseInt(i.LastClock, 10, 64)
 	if ts <= 0 {
@@ -427,6 +438,7 @@ func (i *Item) GetHostID() string {
 // Helper methods for History
 
 // Time returns the history point timestamp.
+// Returns zero time if the clock string is empty or invalid.
 func (h *History) Time() time.Time {
 	ts, _ := strconv.ParseInt(h.Clock, 10, 64)
 	if ts <= 0 {
@@ -436,6 +448,7 @@ func (h *History) Time() time.Time {
 }
 
 // ValueFloat returns the history value as a float64.
+// Returns 0 if the value string is empty or invalid.
 func (h *History) ValueFloat() float64 {
 	v, _ := strconv.ParseFloat(h.Value, 64)
 	return v
