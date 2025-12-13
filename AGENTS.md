@@ -29,9 +29,13 @@
 
 ### In Progress
 
-- [ ] Hosts tab view (UI exists, needs data integration)
+- [x] Hosts tab view (UI exists, needs data integration)
 - [ ] Events/History tab view
 - [ ] Graphs tab view
+
+### TODO
+
+- [ ] Add CI, codecov, and code quality badges to README
 
 ### Known Issues
 
