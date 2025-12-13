@@ -332,14 +332,19 @@ func (m Model) renderRow(e zabbix.Event, selected bool) string {
 	}
 
 	if selected {
-		statusIcon := statusStyle.Render(indicator)
-		timeStrStyled := m.styles.AlertSelected.Width(8).Render(timeStr)
-		hostStr := m.styles.AlertSelected.Width(12).Render(host)
-		nameStr := m.styles.AlertSelected.Width(nameWidth).Render(name)
-		durationStr := m.styles.AlertSelected.Width(8).Align(lipgloss.Right).Render(duration)
+		// Build plain text row, then apply highlight style to the whole thing
+		// This prevents ANSI code fragmentation from individual column styles
+		timePadded := fmt.Sprintf("%-8s", timeStr)
+		hostPadded := fmt.Sprintf("%-12s", host)
+		namePadded := fmt.Sprintf("%-*s", nameWidth, name)
+		durationPadded := fmt.Sprintf("%8s", duration)
 
-		row := fmt.Sprintf("%s %s %s %s %s", statusIcon, timeStrStyled, hostStr, nameStr, durationStr)
-		return m.styles.AlertSelected.Width(m.width - 2).Render(row)
+		row := fmt.Sprintf("%s %s %s %s %s", indicator, timePadded, hostPadded, namePadded, durationPadded)
+		// Pad to full width for consistent highlight
+		if len(row) < m.width-2 {
+			row += strings.Repeat(" ", m.width-2-len(row))
+		}
+		return m.styles.AlertSelected.Render(row)
 	}
 
 	// Normal row rendering

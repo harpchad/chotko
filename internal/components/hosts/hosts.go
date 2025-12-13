@@ -356,14 +356,18 @@ func (m Model) renderRow(h zabbix.Host, selected bool) string {
 	}
 
 	if selected {
-		// For selected rows, use selected style
-		statusIcon := statusStyle.Render(indicator)
-		nameStr := m.styles.AlertSelected.Width(nameWidth).Render(name)
-		ipStr := m.styles.AlertSelected.Width(18).Render(ip)
-		groupStr := m.styles.AlertSelected.Width(15).Align(lipgloss.Right).Render(group)
+		// Build plain text row, then apply highlight style to the whole thing
+		// This prevents ANSI code fragmentation from individual column styles
+		namePadded := fmt.Sprintf("%-*s", nameWidth, name)
+		ipPadded := fmt.Sprintf("%-18s", ip)
+		groupPadded := fmt.Sprintf("%15s", group)
 
-		row := fmt.Sprintf("%s %s %s %s", statusIcon, nameStr, ipStr, groupStr)
-		return m.styles.AlertSelected.Width(m.width - 2).Render(row)
+		row := fmt.Sprintf("%s %s %s %s", indicator, namePadded, ipPadded, groupPadded)
+		// Pad to full width for consistent highlight
+		if len(row) < m.width-2 {
+			row += strings.Repeat(" ", m.width-2-len(row))
+		}
+		return m.styles.AlertSelected.Render(row)
 	}
 
 	// Normal row rendering
