@@ -583,7 +583,7 @@ func (m Model) viewGraph() string {
 				chartHeight = 15
 			}
 
-			chart := tslc.New(chartWidth, chartHeight)
+			chart := tslc.New(chartWidth, chartHeight, tslc.WithXLabelFormatter(tslc.HourTimeLabelFormatter()))
 
 			// Push history data points
 			for _, h := range m.history {
