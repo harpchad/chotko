@@ -91,8 +91,14 @@ type ItemsLoadedMsg struct {
 	Err   error
 }
 
-// HistoryLoadedMsg is sent when history data is loaded from Zabbix.
-type HistoryLoadedMsg struct {
+// HostHistoryRequestMsg requests history loading for a specific host's items.
+type HostHistoryRequestMsg struct {
+	HostID string
+}
+
+// HostHistoryLoadedMsg is sent when history for a specific host is loaded.
+type HostHistoryLoadedMsg struct {
+	HostID  string
 	History map[string][]zabbix.History
 	Err     error
 }

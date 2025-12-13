@@ -97,6 +97,17 @@ func (m *Model) SetHistory(history map[string][]zabbix.History) {
 	m.regenerateSparklines()
 }
 
+// MergeHistory adds history data for items without clearing existing data.
+func (m *Model) MergeHistory(history map[string][]zabbix.History) {
+	if m.history == nil {
+		m.history = make(map[string][]zabbix.History)
+	}
+	for itemID, hist := range history {
+		m.history[itemID] = hist
+	}
+	m.regenerateSparklines()
+}
+
 // regenerateSparklines creates sparkline strings for all items.
 func (m *Model) regenerateSparklines() {
 	m.sparklines = make(map[string]string)
@@ -194,10 +205,22 @@ func (m *Model) GoToBottom() {
 }
 
 // Toggle toggles expand/collapse of the current node.
-func (m *Model) Toggle() {
-	if node := m.Selected(); node != nil {
-		m.tree.ToggleNode(node.ID)
+// Returns the host ID if a host was expanded and needs history loading, empty string otherwise.
+func (m *Model) Toggle() string {
+	node := m.Selected()
+	if node == nil {
+		return ""
 	}
+
+	wasCollapsed := node.Collapsed
+	m.tree.ToggleNode(node.ID)
+
+	// If a host node was expanded and we don't have history for it, return host ID
+	if node.Type == NodeTypeHost && wasCollapsed && !m.HasHostHistory(node.HostID) {
+		return node.HostID
+	}
+
+	return ""
 }
 
 // ExpandAll expands all nodes.
@@ -236,6 +259,11 @@ func (m Model) Init() tea.Cmd {
 	return nil
 }
 
+// HostExpandedMsg is sent when a host node is expanded and needs history loading.
+type HostExpandedMsg struct {
+	HostID string
+}
+
 // Update implements tea.Model.
 func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	if !m.focused {
@@ -257,7 +285,12 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 		case key.Matches(msg, key.NewBinding(key.WithKeys("end", "G"))):
 			m.GoToBottom()
 		case key.Matches(msg, key.NewBinding(key.WithKeys("enter", " "))):
-			m.Toggle()
+			if hostID := m.Toggle(); hostID != "" {
+				// Host was expanded and needs history, send message
+				return m, func() tea.Msg {
+					return HostExpandedMsg{HostID: hostID}
+				}
+			}
 		case key.Matches(msg, key.NewBinding(key.WithKeys("E"))):
 			m.ExpandAll()
 		case key.Matches(msg, key.NewBinding(key.WithKeys("C"))):
@@ -473,4 +506,23 @@ func formatBytes(bytes float64) string {
 // GetHistory returns the history data for an item.
 func (m Model) GetHistory(itemID string) []zabbix.History {
 	return m.history[itemID]
+}
+
+// GetHostItems returns all items belonging to a specific host.
+func (m Model) GetHostItems(hostID string) []zabbix.Item {
+	if m.tree == nil {
+		return nil
+	}
+	return m.tree.ItemsByHost[hostID]
+}
+
+// HasHostHistory returns true if history has been loaded for any item of the host.
+func (m Model) HasHostHistory(hostID string) bool {
+	items := m.GetHostItems(hostID)
+	for _, item := range items {
+		if _, ok := m.history[item.ItemID]; ok {
+			return true
+		}
+	}
+	return false
 }

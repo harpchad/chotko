@@ -304,21 +304,24 @@ func (m *Model) loadItems() tea.Cmd {
 	}
 }
 
-// loadItemHistory fetches history data for the currently visible items.
-func (m *Model) loadItemHistory() tea.Cmd {
+// loadHostHistory fetches history data for items belonging to a specific host.
+func (m *Model) loadHostHistory(hostID string) tea.Cmd {
 	// Capture values for the goroutine
 	client := m.client
 	ctx := m.ctx
-	items := m.items
 	hours := m.config.GetHistoryHours()
 
+	// Get items for this host from the graph list
+	hostItems := m.graphList.GetHostItems(hostID)
+
 	return func() tea.Msg {
-		if client == nil || len(items) == 0 {
-			return HistoryLoadedMsg{History: nil, Err: nil}
+		if client == nil || len(hostItems) == 0 {
+			return HostHistoryLoadedMsg{HostID: hostID, History: nil, Err: nil}
 		}
 
-		history, err := client.GetItemsHistory(ctx, items, hours)
-		return HistoryLoadedMsg{
+		history, err := client.GetItemsHistory(ctx, hostItems, hours)
+		return HostHistoryLoadedMsg{
+			HostID:  hostID,
 			History: history,
 			Err:     err,
 		}

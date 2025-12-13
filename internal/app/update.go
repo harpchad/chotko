@@ -8,6 +8,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/harpchad/chotko/internal/components/command"
+	"github.com/harpchad/chotko/internal/components/graphs"
 )
 
 // Update handles all incoming messages and updates the model accordingly.
@@ -138,25 +139,28 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.items = msg.Items
 		m.graphList.SetItems(msg.Items, m.config.GetGraphCategories())
 
-		// Load history data for items and update detail pane
+		// Update detail pane with selected item if on graphs tab
+		// History will be lazy-loaded when hosts are expanded
 		if m.tabBar.Active() == TabGraphs {
-			// Update detail pane with selected item (history will be empty until it loads)
 			if selected := m.graphList.SelectedItem(); selected != nil {
 				history := m.graphList.GetHistory(selected.ItemID)
 				m.detailPane.SetItem(selected, history)
 			}
-			return m, m.loadItemHistory()
 		}
 		return m, nil
 
-	case HistoryLoadedMsg:
+	case graphs.HostExpandedMsg:
+		// A host node was expanded and needs history loading
+		return m, m.loadHostHistory(msg.HostID)
+
+	case HostHistoryLoadedMsg:
 		if msg.Err != nil {
 			// Silent fail for history - not critical
 			return m, nil
 		}
 
-		// Update graph list with history data
-		m.graphList.SetHistory(msg.History)
+		// Merge history into graph list
+		m.graphList.MergeHistory(msg.History)
 
 		// Update detail pane with selected item if on graphs tab
 		if m.tabBar.Active() == TabGraphs {
@@ -461,10 +465,8 @@ func (m Model) switchTab(newTab int) (tea.Model, tea.Cmd) {
 				m.loading = true
 				m.statusBar.SetLoading(true)
 				cmds = append(cmds, m.loadItems())
-			} else {
-				// Items already loaded, but load history for them
-				cmds = append(cmds, m.loadItemHistory())
 			}
+			// History is now lazy-loaded when hosts are expanded
 		}
 	}
 
