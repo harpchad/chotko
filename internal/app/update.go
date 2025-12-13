@@ -100,6 +100,29 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 
+	case EventsLoadedMsg:
+		m.loading = false
+		m.statusBar.SetLoading(false)
+		m.lastRefresh = time.Now()
+		m.statusBar.SetLastUpdate(m.lastRefresh.Format("15:04:05"))
+
+		if msg.Err != nil {
+			m.showError = true
+			m.errorModal.ShowError("Failed to Load Events", "Could not retrieve events from Zabbix", msg.Err)
+			return m, nil
+		}
+
+		m.events = msg.Events
+		m.eventList.SetEvents(msg.Events)
+
+		// Update detail pane with selected event if on events tab
+		if m.tabBar.Active() == TabEvents {
+			if selected := m.eventList.Selected(); selected != nil {
+				m.detailPane.SetEvent(selected)
+			}
+		}
+		return m, nil
+
 	case HostCountsLoadedMsg:
 		if msg.Err != nil {
 			// Silent fail for host counts
@@ -187,6 +210,16 @@ func (m Model) updateListPane(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if selected := m.hostList.Selected(); selected != nil {
 			m.detailPane.SetHost(selected)
 		}
+	case TabEvents:
+		var cmd tea.Cmd
+		m.eventList, cmd = m.eventList.Update(msg)
+		if cmd != nil {
+			cmds = append(cmds, cmd)
+		}
+		// Update detail when selection changes
+		if selected := m.eventList.Selected(); selected != nil {
+			m.detailPane.SetEvent(selected)
+		}
 	}
 
 	return m, tea.Batch(cmds...)
@@ -201,6 +234,8 @@ func (m *Model) loadDataForCurrentTab() []tea.Cmd {
 		cmds = append(cmds, m.loadProblems())
 	case TabHosts:
 		cmds = append(cmds, m.loadHosts())
+	case TabEvents:
+		cmds = append(cmds, m.loadEvents())
 	default:
 		// For other tabs, load problems by default
 		cmds = append(cmds, m.loadProblems())
@@ -301,6 +336,7 @@ func (m Model) handleKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.alertList.SetMinSeverity(0)
 		m.alertList.SetTextFilter("")
 		m.hostList.SetTextFilter("")
+		m.eventList.SetTextFilter("")
 		m.statusBar.SetFilter(0, "")
 		return m, nil
 	}
@@ -353,6 +389,12 @@ func (m Model) switchTab(newTab int) (tea.Model, tea.Cmd) {
 				m.statusBar.SetLoading(true)
 				cmd = m.loadHosts()
 			}
+		case TabEvents:
+			if len(m.events) == 0 {
+				m.loading = true
+				m.statusBar.SetLoading(true)
+				cmd = m.loadEvents()
+			}
 		}
 	}
 
@@ -363,16 +405,19 @@ func (m Model) switchTab(newTab int) (tea.Model, tea.Cmd) {
 func (m *Model) updateListFocus() {
 	isFocused := m.focused == PaneList
 
+	// Clear all focuses first
+	m.alertList.SetFocused(false)
+	m.hostList.SetFocused(false)
+	m.eventList.SetFocused(false)
+
+	// Set focus for the active tab's list
 	switch m.tabBar.Active() {
 	case TabAlerts:
 		m.alertList.SetFocused(isFocused)
-		m.hostList.SetFocused(false)
 	case TabHosts:
-		m.alertList.SetFocused(false)
 		m.hostList.SetFocused(isFocused)
-	default:
-		m.alertList.SetFocused(false)
-		m.hostList.SetFocused(false)
+	case TabEvents:
+		m.eventList.SetFocused(isFocused)
 	}
 }
 
@@ -390,6 +435,12 @@ func (m *Model) updateDetailForCurrentTab() {
 			m.detailPane.SetHost(selected)
 		} else {
 			m.detailPane.SetHost(nil)
+		}
+	case TabEvents:
+		if selected := m.eventList.Selected(); selected != nil {
+			m.detailPane.SetEvent(selected)
+		} else {
+			m.detailPane.SetEvent(nil)
 		}
 	default:
 		m.detailPane.Clear()
@@ -419,6 +470,8 @@ func (m Model) handleCommandInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				m.alertList.SetTextFilter(value)
 			case TabHosts:
 				m.hostList.SetTextFilter(value)
+			case TabEvents:
+				m.eventList.SetTextFilter(value)
 			}
 			m.statusBar.SetFilter(m.minSeverity, m.textFilter)
 		case command.ModeAckMessage:

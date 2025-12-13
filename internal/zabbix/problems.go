@@ -3,6 +3,7 @@ package zabbix
 import (
 	"context"
 	"fmt"
+	"time"
 )
 
 // ProblemGetParams defines parameters for fetching problems.
@@ -258,4 +259,71 @@ func (c *Client) UnsuppressProblem(ctx context.Context, eventID string) error {
 	}
 
 	return nil
+}
+
+// EventHistoryParams defines parameters for fetching event history.
+type EventHistoryParams struct {
+	Limit    int   // Max events to return (default 100)
+	TimeFrom int64 // Unix timestamp - events from this time
+	TimeTill int64 // Unix timestamp - events until this time
+	HostIDs  []string
+}
+
+// DefaultEventHistoryParams returns default parameters for event history.
+func DefaultEventHistoryParams() EventHistoryParams {
+	return EventHistoryParams{
+		Limit: 100,
+	}
+}
+
+// GetEventHistory retrieves recent events (both problem and recovery).
+// This shows historical events, not just active problems.
+func (c *Client) GetEventHistory(ctx context.Context, params EventHistoryParams) ([]Event, error) {
+	source := 0 // 0 = trigger events
+	object := 0 // 0 = trigger
+
+	eventParams := EventGetParams{
+		Output:             "extend",
+		SelectHosts:        []string{"hostid", "host", "name"},
+		SelectTags:         "extend",
+		SelectAcknowledges: "extend",
+		Source:             &source,
+		Object:             &object,
+		SortField:          []string{"clock", "eventid"},
+		SortOrder:          "DESC",
+		Limit:              params.Limit,
+	}
+
+	if params.Limit == 0 {
+		eventParams.Limit = 100
+	}
+
+	if params.TimeFrom > 0 {
+		eventParams.TimeFrom = params.TimeFrom
+	}
+
+	if params.TimeTill > 0 {
+		eventParams.TimeTill = params.TimeTill
+	}
+
+	if len(params.HostIDs) > 0 {
+		eventParams.HostIDs = params.HostIDs
+	}
+
+	var events []Event
+	if err := c.call(ctx, "event.get", eventParams, &events); err != nil {
+		return nil, fmt.Errorf("failed to get event history: %w", err)
+	}
+
+	return events, nil
+}
+
+// GetRecentEvents retrieves events from the last N hours.
+func (c *Client) GetRecentEvents(ctx context.Context, hours int, limit int) ([]Event, error) {
+	params := DefaultEventHistoryParams()
+	params.TimeFrom = time.Now().Add(-time.Duration(hours) * time.Hour).Unix()
+	if limit > 0 {
+		params.Limit = limit
+	}
+	return c.GetEventHistory(ctx, params)
 }

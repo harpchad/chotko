@@ -24,6 +24,12 @@ type HostsLoadedMsg struct {
 	Err   error
 }
 
+// EventsLoadedMsg is sent when events are loaded from Zabbix.
+type EventsLoadedMsg struct {
+	Events []zabbix.Event
+	Err    error
+}
+
 // AcknowledgeResultMsg is sent after acknowledging a problem.
 type AcknowledgeResultMsg struct {
 	EventID string

@@ -114,6 +114,16 @@ type HostCounts struct {
 	Total       int
 }
 
+// Event represents a Zabbix event (problem or recovery).
+// Uses the same structure as Problem since event.get returns the same fields.
+type Event = Problem
+
+// EventValue constants.
+const (
+	EventValueOK      = "0" // Recovery/OK event
+	EventValueProblem = "1" // Problem event
+)
+
 // Helper methods
 
 // SeverityInt returns the severity as an integer.
@@ -206,4 +216,51 @@ func (h *Host) DisplayName() string {
 		return h.Name
 	}
 	return h.Host
+}
+
+// IsRecovery returns true if this is a recovery (OK) event.
+func (p *Problem) IsRecovery() bool {
+	return p.REventID != "" && p.REventID != "0"
+}
+
+// RecoveryTime returns the recovery time if the problem was resolved.
+func (p *Problem) RecoveryTime() time.Time {
+	if p.RClock == "" || p.RClock == "0" {
+		return time.Time{}
+	}
+	ts, _ := strconv.ParseInt(p.RClock, 10, 64)
+	return time.Unix(ts, 0)
+}
+
+// ResolvedDuration returns how long the problem lasted before being resolved.
+// Returns 0 if not resolved.
+func (p *Problem) ResolvedDuration() time.Duration {
+	if !p.IsRecovery() {
+		return 0
+	}
+	return p.RecoveryTime().Sub(p.StartTime())
+}
+
+// ResolvedDurationString returns human-readable duration for resolved problems.
+func (p *Problem) ResolvedDurationString() string {
+	d := p.ResolvedDuration()
+	if d == 0 {
+		return ""
+	}
+
+	if d < time.Minute {
+		return fmt.Sprintf("%ds", int(d.Seconds()))
+	}
+	if d < time.Hour {
+		return fmt.Sprintf("%dm", int(d.Minutes()))
+	}
+	if d < 24*time.Hour {
+		h := int(d.Hours())
+		m := int(d.Minutes()) % 60
+		return fmt.Sprintf("%dh %dm", h, m)
+	}
+
+	days := int(d.Hours()) / 24
+	hours := int(d.Hours()) % 24
+	return fmt.Sprintf("%dd %dh", days, hours)
 }
