@@ -1,0 +1,22 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+      - id: check-merge-conflict
+
+  - repo: https://github.com/tekwizely/pre-commit-golang
+    rev: v1.0.0-rc.4
+    hooks:
+      # Formatters (repo-level)
+      - id: go-fumpt-repo
+        args: [-w]
+      # Build & Vet (module-based, repo-level)
+      - id: go-vet-repo-mod
+      - id: go-build-repo-mod
+      # Linting (module-based, repo-level)
+      - id: golangci-lint-repo-mod
+        args: [--fix]
