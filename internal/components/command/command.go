@@ -121,13 +121,12 @@ func (m Model) View() string {
 		)
 	}
 
-	// Show active input
-	prompt := m.styles.CommandPrompt.Render(m.input.Prompt)
+	// Show active input (textinput.View() already includes the prompt)
 	input := m.input.View()
 	hint := ""
 	if m.hint != "" {
 		hint = "  " + m.styles.CommandHint.Render(m.hint)
 	}
 
-	return prompt + input + hint
+	return input + hint
 }

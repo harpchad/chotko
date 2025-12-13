@@ -190,6 +190,14 @@ func (m Model) renderHelp() string {
 			},
 		},
 		{
+			title: "Host Editing (Hosts tab)",
+			keys: [][]string{
+				{"t", "Edit triggers"},
+				{"m", "Edit macros"},
+				{"e", "Enable/disable host"},
+			},
+		},
+		{
 			title: "Filtering",
 			keys: [][]string{
 				{"/", "Filter mode"},

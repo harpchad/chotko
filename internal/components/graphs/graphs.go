@@ -395,9 +395,13 @@ func (m Model) renderNode(node *TreeNode, selected bool) string {
 	// Combine parts
 	row := indent + indicator + rowContent
 
-	// Apply selection or normal style with full width for proper highlighting
+	// Apply selection or normal style
 	if selected {
-		return m.styles.AlertSelected.Width(m.width - 2).Render(row)
+		// Pad to full width for consistent highlight
+		if len(row) < m.width-2 {
+			row += strings.Repeat(" ", m.width-2-len(row))
+		}
+		return m.styles.AlertSelected.Render(row)
 	}
 
 	return m.styles.AlertNormal.Width(m.width - 2).Render(row)

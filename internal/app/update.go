@@ -10,12 +10,18 @@ import (
 	zone "github.com/lrstanley/bubblezone"
 
 	"github.com/harpchad/chotko/internal/components/command"
+	"github.com/harpchad/chotko/internal/components/editor"
 	"github.com/harpchad/chotko/internal/components/graphs"
 )
 
 // Update handles all incoming messages and updates the model accordingly.
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
+
+	// Handle editor modal first if visible
+	if m.showEditor {
+		return m.handleEditorUpdate(msg)
+	}
 
 	// Handle modals (help or error) first if visible
 	if m.showHelp || m.showError {
@@ -215,6 +221,69 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.showError = false
 		m.errorModal.Hide()
 		return m, nil
+
+	case HostTriggersLoadedMsg:
+		if msg.Err != nil {
+			m.showError = true
+			m.errorModal.ShowError("Failed to Load Triggers", "Could not retrieve triggers from Zabbix", msg.Err)
+			return m, nil
+		}
+		// Show the triggers editor - find the host from various sources
+		host := m.findHostByID(msg.HostID)
+		if host != nil {
+			m.editorPane.ShowHostTriggers(host, msg.Triggers, msg.SelectTriggerID)
+			m.showEditor = true
+		}
+		return m, nil
+
+	case HostMacrosLoadedMsg:
+		if msg.Err != nil {
+			m.showError = true
+			m.errorModal.ShowError("Failed to Load Macros", "Could not retrieve macros from Zabbix", msg.Err)
+			return m, nil
+		}
+		// Show the macros editor - find the host from various sources
+		host := m.findHostByID(msg.HostID)
+		if host != nil {
+			m.editorPane.ShowHostMacros(host, msg.Macros)
+			m.showEditor = true
+		}
+		return m, nil
+
+	case TriggerUpdateResultMsg:
+		if msg.Err != nil {
+			m.showError = true
+			m.errorModal.ShowError("Trigger Update Failed", "Could not update trigger", msg.Err)
+			return m, nil
+		}
+		// Refresh hosts and reload triggers for the host we were editing
+		hostID := m.getSelectedHostID()
+		if hostID != "" {
+			// Reload triggers, keeping cursor on the same trigger we just toggled
+			return m, tea.Batch(m.loadHosts(), m.loadHostTriggers(hostID, msg.TriggerID))
+		}
+		return m, m.loadHosts()
+
+	case MacroUpdateResultMsg:
+		if msg.Err != nil {
+			m.showError = true
+			m.errorModal.ShowError("Macro Update Failed", "Could not update macro", msg.Err)
+			return m, nil
+		}
+		// Reload macros for current host
+		if selected := m.hostList.Selected(); selected != nil {
+			return m, m.loadHostMacros(selected.HostID)
+		}
+		return m, nil
+
+	case HostUpdateResultMsg:
+		if msg.Err != nil {
+			m.showError = true
+			m.errorModal.ShowError("Host Update Failed", "Could not update host", msg.Err)
+			return m, nil
+		}
+		// Refresh hosts list
+		return m, m.loadHosts()
 	}
 
 	// Update focused component based on current tab
@@ -400,6 +469,33 @@ func (m Model) handleKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				m.statusBar.SetFilter(m.minSeverity, m.textFilter)
 			}
 		}
+		return m, nil
+
+	// Host editing - works on Hosts tab and Alerts tab (for the alert's host)
+	case key.Matches(msg, m.keys.EditTriggers):
+		hostID, triggerID := m.getSelectedHostAndTriggerID()
+		if hostID != "" {
+			return m, m.loadHostTriggers(hostID, triggerID)
+		}
+		return m, nil
+
+	case key.Matches(msg, m.keys.EditMacros):
+		hostID := m.getSelectedHostID()
+		if hostID != "" {
+			return m, m.loadHostMacros(hostID)
+		}
+		return m, nil
+
+	case key.Matches(msg, m.keys.ToggleMonitor):
+		if m.tabBar.Active() == TabHosts && m.hostList.Selected() != nil {
+			host := m.hostList.Selected()
+			if host.IsMonitored() {
+				return m, m.disableHost(host.HostID)
+			}
+			return m, m.enableHost(host.HostID)
+		}
+		// For alerts, we need to fetch the host first to check status
+		// For now, just show a message that this only works on Hosts tab
 		return m, nil
 
 	// Clear filter
@@ -789,4 +885,55 @@ func (m *Model) setFocus(pane Pane) {
 	case PaneDetail:
 		m.detailPane.SetFocused(true)
 	}
+}
+
+// handleEditorUpdate handles messages when the editor modal is visible.
+func (m Model) handleEditorUpdate(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmds []tea.Cmd
+
+	// Handle editor-specific messages
+	switch msg := msg.(type) {
+	case editor.TriggerToggleMsg:
+		// Trigger enable/disable request
+		m.editorPane.Hide()
+		m.showEditor = false
+		return m, m.toggleTrigger(msg.TriggerID, msg.Enable, msg.HostID)
+
+	case editor.MacroEditedMsg:
+		// Macro value changed
+		return m, m.updateHostMacro(msg.MacroID, msg.NewValue, msg.HostID)
+
+	case editor.MacroDeleteMsg:
+		// Macro delete request
+		m.editorPane.Hide()
+		m.showEditor = false
+		return m, m.deleteHostMacro(msg.MacroID, msg.HostID)
+
+	case tea.KeyMsg:
+		// Forward to editor
+		var cmd tea.Cmd
+		m.editorPane, cmd = m.editorPane.Update(msg)
+		if cmd != nil {
+			cmds = append(cmds, cmd)
+		}
+
+		// Check if editor was closed
+		if !m.editorPane.Visible() {
+			m.showEditor = false
+		}
+		return m, tea.Batch(cmds...)
+
+	case tea.WindowSizeMsg:
+		m.SetSize(msg.Width, msg.Height)
+		return m, nil
+	}
+
+	// Forward other messages to editor
+	var cmd tea.Cmd
+	m.editorPane, cmd = m.editorPane.Update(msg)
+	if cmd != nil {
+		cmds = append(cmds, cmd)
+	}
+
+	return m, tea.Batch(cmds...)
 }

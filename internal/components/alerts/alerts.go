@@ -344,16 +344,18 @@ func (m Model) renderRow(p zabbix.Problem, selected bool) string {
 	}
 
 	if selected {
-		// For selected rows, use selected style for all elements
-		// Keep severity color for the indicator only
-		severityIcon := m.styles.AlertSeverity[severity].Render(indicator)
-		hostStr := m.styles.AlertSelected.Width(15).Render(host)
-		nameStr := m.styles.AlertSelected.Width(nameWidth).Render(name)
-		durationStr := m.styles.AlertSelected.Width(10).Align(lipgloss.Right).Render(duration)
-		ackStr := m.styles.AlertSelected.Render(ackIndicator)
+		// Build plain text row, then apply highlight style to the whole thing
+		// This prevents ANSI code fragmentation from individual column styles
+		hostPadded := fmt.Sprintf("%-15s", host)
+		namePadded := fmt.Sprintf("%-*s", nameWidth, name)
+		durationPadded := fmt.Sprintf("%10s", duration)
 
-		row := fmt.Sprintf("%s %s %s %s %s", severityIcon, hostStr, nameStr, durationStr, ackStr)
-		return m.styles.AlertSelected.Width(m.width - 2).Render(row)
+		row := fmt.Sprintf("%s %s %s %s %s", indicator, hostPadded, namePadded, durationPadded, ackIndicator)
+		// Pad to full width for consistent highlight
+		if len(row) < m.width-2 {
+			row += strings.Repeat(" ", m.width-2-len(row))
+		}
+		return m.styles.AlertSelected.Render(row)
 	}
 
 	// Normal row rendering with individual styles

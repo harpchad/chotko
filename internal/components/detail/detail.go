@@ -248,7 +248,7 @@ func (m Model) viewProblem() string {
 		// Actions hint
 		lines = append(lines, "")
 		lines = append(lines, strings.Repeat("─", max(0, m.width-4)))
-		lines = append(lines, m.styles.Subtle.Render("[a]ck [A]ck+msg [r]efresh"))
+		lines = append(lines, m.styles.Subtle.Render("[a]ck [A]ck+msg [t]riggers [m]acros [r]efresh"))
 
 		b.WriteString(m.renderLines(lines))
 	}
@@ -358,7 +358,7 @@ func (m Model) viewEvent() string {
 		// Actions hint
 		lines = append(lines, "")
 		lines = append(lines, strings.Repeat("─", max(0, m.width-4)))
-		lines = append(lines, m.styles.Subtle.Render("[r]efresh"))
+		lines = append(lines, m.styles.Subtle.Render("[t]riggers [m]acros [r]efresh"))
 
 		b.WriteString(m.renderLines(lines))
 	}
@@ -464,7 +464,7 @@ func (m Model) viewHost() string {
 		// Actions hint
 		lines = append(lines, "")
 		lines = append(lines, strings.Repeat("─", max(0, m.width-4)))
-		lines = append(lines, m.styles.Subtle.Render("[r]efresh"))
+		lines = append(lines, m.styles.Subtle.Render("[t]riggers [m]acros [e]nable/disable [r]efresh"))
 
 		b.WriteString(m.renderLines(lines))
 	}

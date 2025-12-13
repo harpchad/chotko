@@ -33,6 +33,11 @@ type KeyMap struct {
 	AckMessage  key.Binding
 	Refresh     key.Binding
 
+	// Host editing
+	EditTriggers  key.Binding
+	EditMacros    key.Binding
+	ToggleMonitor key.Binding
+
 	// Filtering
 	Filter         key.Binding
 	ClearFilter    key.Binding
@@ -136,6 +141,20 @@ func DefaultKeyMap() KeyMap {
 			key.WithHelp("r", "refresh"),
 		),
 
+		// Host editing
+		EditTriggers: key.NewBinding(
+			key.WithKeys("t"),
+			key.WithHelp("t", "edit triggers"),
+		),
+		EditMacros: key.NewBinding(
+			key.WithKeys("m"),
+			key.WithHelp("m", "edit macros"),
+		),
+		ToggleMonitor: key.NewBinding(
+			key.WithKeys("e"),
+			key.WithHelp("e", "enable/disable host"),
+		),
+
 		// Filtering
 		Filter: key.NewBinding(
 			key.WithKeys("/"),
@@ -188,6 +207,8 @@ func (k KeyMap) FullHelp() [][]key.Binding {
 		{k.NextPane, k.PrevPane, k.Select},
 		// Actions
 		{k.Acknowledge, k.AckMessage, k.Refresh},
+		// Host editing
+		{k.EditTriggers, k.EditMacros, k.ToggleMonitor},
 		// Filtering & Modes
 		{k.Filter, k.ClearFilter, k.Command, k.Help, k.Quit},
 	}

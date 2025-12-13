@@ -17,6 +17,7 @@ The name comes from the Russian slang word "чётко" (chotko), meaning "preci
 - View active Zabbix alerts with severity-based color coding
 - Acknowledge problems directly from the terminal
 - Host status overview (OK, Problem, Unknown, Maintenance)
+- Edit host triggers (enable/disable) and macros directly from TUI
 - Events history view with problem/recovery tracking
 - Graphs tab with time series charts for numeric metrics
 - Multiple built-in themes (Nord, Dracula, Gruvbox, Catppuccin, Tokyo Night, Solarized)
@@ -97,6 +98,9 @@ display:
 | `Shift+Tab` | Previous pane |
 | `a` | Acknowledge selected alert |
 | `A` | Acknowledge with message |
+| `t` | Edit triggers for selected host |
+| `m` | Edit macros for selected host |
+| `e` | Toggle host monitoring (Hosts tab) |
 | `r` | Refresh data |
 | `/` | Filter mode |
 | `0-5` | Filter by minimum severity |
@@ -112,6 +116,21 @@ display:
 | `Enter` / `Space` | Toggle expand/collapse |
 | `E` | Expand all nodes |
 | `C` | Collapse all nodes |
+
+### Trigger Editor
+
+| Key | Action |
+|-----|--------|
+| `Space` | Toggle enable/disable |
+| `Esc` | Close editor |
+
+### Macro Editor
+
+| Key | Action |
+|-----|--------|
+| `e` / `Enter` | Edit macro value |
+| `d` | Delete macro |
+| `Esc` | Close editor |
 
 ## Mouse Support
 
