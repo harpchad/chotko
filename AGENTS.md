@@ -41,6 +41,34 @@
 
 ## Development Guidelines
 
+### Git Workflow
+
+**IMPORTANT: Never push directly to main. Always use pull requests.**
+
+1. Create a feature branch for any changes:
+   ```bash
+   git checkout -b fix/description-of-fix
+   # or
+   git checkout -b feature/description-of-feature
+   ```
+
+2. Make changes and commit with conventional commit messages:
+   ```bash
+   git commit -m "fix: description of the fix"
+   git commit -m "feat: description of the feature"
+   ```
+
+3. Push the branch and create a PR:
+   ```bash
+   git push -u origin fix/description-of-fix
+   gh pr create --title "fix: description" --body "Details..."
+   ```
+
+4. Wait for CI to pass, then merge via GitHub UI or:
+   ```bash
+   gh pr merge --squash --delete-branch
+   ```
+
 ### Code Formatting
 
 Use `gofumpt` for all Go code formatting:
