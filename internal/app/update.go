@@ -229,6 +229,7 @@ func (m Model) handleKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if severity, err := strconv.Atoi(msg.String()); err == nil {
 			m.minSeverity = severity
 			m.alertList.SetMinSeverity(severity)
+			m.statusBar.SetFilter(m.minSeverity, m.textFilter)
 		}
 		return m, nil
 
@@ -238,6 +239,7 @@ func (m Model) handleKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.textFilter = ""
 		m.alertList.SetMinSeverity(0)
 		m.alertList.SetTextFilter("")
+		m.statusBar.SetFilter(0, "")
 		return m, nil
 	}
 
@@ -278,6 +280,7 @@ func (m Model) handleCommandInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		case command.ModeFilter:
 			m.textFilter = value
 			m.alertList.SetTextFilter(value)
+			m.statusBar.SetFilter(m.minSeverity, m.textFilter)
 		case command.ModeAckMessage:
 			if m.alertList.Selected() != nil {
 				return m, m.acknowledgeProblem(value)

@@ -29,6 +29,7 @@ type Styles struct {
 	StatusProblem lipgloss.Style
 	StatusUnknown lipgloss.Style
 	StatusMaint   lipgloss.Style
+	StatusFilter  lipgloss.Style
 
 	// Alert list styles
 	AlertSelected lipgloss.Style
@@ -105,6 +106,9 @@ func NewStyles(t *Theme) *Styles {
 			Foreground(c.Unknown),
 		StatusMaint: lipgloss.NewStyle().
 			Foreground(c.Maintenance),
+		StatusFilter: lipgloss.NewStyle().
+			Foreground(c.Warning).
+			Bold(true),
 
 		// Alert list styles
 		AlertSelected: lipgloss.NewStyle().
