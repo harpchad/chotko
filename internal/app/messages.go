@@ -102,3 +102,59 @@ type HostHistoryLoadedMsg struct {
 	History map[string][]zabbix.History
 	Err     error
 }
+
+// HostDetailsLoadedMsg is sent when detailed host info (with macros/triggers) is loaded.
+type HostDetailsLoadedMsg struct {
+	Host *zabbix.Host
+	Err  error
+}
+
+// HostTriggersLoadedMsg is sent when triggers for a host are loaded.
+type HostTriggersLoadedMsg struct {
+	HostID          string
+	Triggers        []zabbix.Trigger
+	SelectTriggerID string // Optional: pre-select this trigger
+	Err             error
+}
+
+// HostMacrosLoadedMsg is sent when macros for a host are loaded.
+type HostMacrosLoadedMsg struct {
+	HostID string
+	Macros []zabbix.HostMacro
+	Err    error
+}
+
+// HostUpdateResultMsg is sent after a host update operation.
+type HostUpdateResultMsg struct {
+	HostID  string
+	Action  string // "enable", "disable", "update"
+	Success bool
+	Err     error
+}
+
+// TriggerUpdateResultMsg is sent after a trigger update operation.
+type TriggerUpdateResultMsg struct {
+	TriggerID string
+	Action    string // "enable", "disable", "update"
+	Success   bool
+	Err       error
+}
+
+// MacroUpdateResultMsg is sent after a macro update operation.
+type MacroUpdateResultMsg struct {
+	MacroID string
+	Action  string // "create", "update", "delete"
+	Success bool
+	Err     error
+}
+
+// OpenEditorMsg triggers opening an editor modal.
+type OpenEditorMsg struct {
+	Type string      // "host", "trigger", "macro"
+	Data interface{} // The object to edit
+}
+
+// CloseEditorMsg triggers closing the editor modal.
+type CloseEditorMsg struct {
+	Saved bool
+}

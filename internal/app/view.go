@@ -7,6 +7,11 @@ import (
 
 // View renders the entire application UI.
 func (m Model) View() string {
+	// Show editor modal if active
+	if m.showEditor {
+		return m.editorPane.View()
+	}
+
 	// Show error modal if active
 	if m.showError || m.showHelp {
 		return m.errorModal.View()

@@ -72,9 +72,35 @@ type Host struct {
 	MaintenanceStatus string      `json:"maintenance_status,omitempty"`
 	MaintenanceType   string      `json:"maintenance_type,omitempty"`
 	ActiveAvailable   string      `json:"active_available,omitempty"`
+	Description       string      `json:"description,omitempty"`
 	Interfaces        []Interface `json:"interfaces,omitempty"`
 	Groups            []HostGroup `json:"groups,omitempty"`
+	Macros            []HostMacro `json:"macros,omitempty"`
+	Triggers          []Trigger   `json:"triggers,omitempty"`
 }
+
+// HostStatus constants.
+const (
+	HostStatusMonitored   = "0" // Host is monitored
+	HostStatusUnmonitored = "1" // Host is not monitored
+)
+
+// HostMacro represents a user macro defined on a host.
+type HostMacro struct {
+	HostMacroID string `json:"hostmacroid,omitempty"`
+	HostID      string `json:"hostid,omitempty"`
+	Macro       string `json:"macro"`
+	Value       string `json:"value"`
+	Type        string `json:"type,omitempty"` // 0=text, 1=secret, 2=vault
+	Description string `json:"description,omitempty"`
+}
+
+// MacroType constants.
+const (
+	MacroTypeText   = "0" // Plain text macro
+	MacroTypeSecret = "1" // Secret macro (value hidden in UI)
+	MacroTypeVault  = "2" // Vault macro
+)
 
 // Interface represents a host interface.
 type Interface struct {
