@@ -28,6 +28,9 @@ type Model struct {
 	// Filter state
 	minSeverity int
 	textFilter  string
+
+	// Ignore checker function - returns true if hostID+triggerID should be hidden
+	isIgnored func(hostID, triggerID string) bool
 }
 
 // New creates a new alerts list model.
@@ -66,10 +69,36 @@ func (m *Model) SetTextFilter(filter string) {
 	m.applyFilter()
 }
 
+// SetIgnoreChecker sets the function used to determine if an alert should be hidden.
+// The function takes hostID and triggerID and returns true if the alert should be ignored.
+func (m *Model) SetIgnoreChecker(fn func(hostID, triggerID string) bool) {
+	m.isIgnored = fn
+	m.applyFilter()
+}
+
 // applyFilter filters problems based on current filter settings.
 func (m *Model) applyFilter() {
 	m.filtered = nil
 	for _, p := range m.problems {
+		// Check ignore list first - skip if host+trigger is ignored
+		if m.isIgnored != nil {
+			hostID := ""
+			triggerID := ""
+			if len(p.Hosts) > 0 {
+				hostID = p.Hosts[0].HostID
+			}
+			// Object "0" means trigger-based problem
+			if p.Object == "0" {
+				triggerID = p.ObjectID
+			}
+			if triggerID == "" && p.RelatedObject.TriggerID != "" {
+				triggerID = p.RelatedObject.TriggerID
+			}
+			if hostID != "" && triggerID != "" && m.isIgnored(hostID, triggerID) {
+				continue
+			}
+		}
+
 		if p.SeverityInt() < m.minSeverity {
 			continue
 		}

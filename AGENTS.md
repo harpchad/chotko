@@ -78,6 +78,7 @@ gh pr merge --squash --delete-branch --auto
 - [x] Add badges to README (release, build, codecov, Go Report Card, license)
 - [x] Add LICENSE file (MIT)
 - [x] Add SECURITY.md for GitHub security tab
+- [x] Local alert ignores (`i` to ignore, `I` to list, `:unignore N` to remove)
 
 ### TODO
 
@@ -303,6 +304,18 @@ Important: BubbleTea uses value semantics for models. When returning `tea.Cmd` f
 | `?` | Help |
 | `q` | Quit |
 
+### Alert Ignoring (Alerts tab)
+
+| Key | Action |
+|-----|--------|
+| `i` | Ignore selected alert locally (prompts y/n confirmation) |
+| `I` | List all ignored alerts |
+| `:ignores` | List all ignored alerts (command mode) |
+| `:unignore N` | Remove ignore rule by 1-based index |
+
+Ignored alerts are stored in `~/.config/chotko/ignores.yaml` and persist across sessions.
+Only trigger-based alerts can be ignored (by host+trigger combination).
+
 ### Graphs Tab Keys
 
 | Key | Action |
@@ -344,6 +357,7 @@ chotko/
 │   │   ├── statusbar/           # Status bar
 │   │   └── tabs/                # Tab bar
 │   ├── config/                   # Configuration
+│   ├── ignores/                  # Local alert ignore list management
 │   ├── theme/                    # Theming system
 │   └── zabbix/                   # API client
 │       ├── client.go            # HTTP client, auth
