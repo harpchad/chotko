@@ -66,7 +66,6 @@ type Model struct {
 	// Data
 	problems   []zabbix.Problem
 	hostCounts *zabbix.HostCounts
-	selected   int
 
 	// Components
 	statusBar    statusbar.Model
@@ -228,19 +227,17 @@ func (m *Model) acknowledgeProblem(message string) tea.Cmd {
 	// Capture values for the goroutine
 	client := m.client
 	ctx := m.ctx
-	selected := m.selected
-	problems := m.problems
+	selected := m.alertList.Selected()
 
 	return func() tea.Msg {
-		if client == nil || selected >= len(problems) {
+		if client == nil || selected == nil {
 			return AcknowledgeResultMsg{Success: false}
 		}
 
-		problem := problems[selected]
-		err := client.AcknowledgeProblem(ctx, problem.EventID, message)
+		err := client.AcknowledgeProblem(ctx, selected.EventID, message)
 
 		return AcknowledgeResultMsg{
-			EventID: problem.EventID,
+			EventID: selected.EventID,
 			Success: err == nil,
 			Err:     err,
 		}
