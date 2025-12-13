@@ -1,14 +1,22 @@
 package alerts
 
 import (
+	"os"
 	"strings"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
+	zone "github.com/lrstanley/bubblezone"
 
 	"github.com/harpchad/chotko/internal/theme"
 	"github.com/harpchad/chotko/internal/zabbix"
 )
+
+// TestMain initializes the zone manager for tests that call View().
+func TestMain(m *testing.M) {
+	zone.NewGlobal()
+	os.Exit(m.Run())
+}
 
 // testStyles returns a theme.Styles instance for testing.
 func testStyles() *theme.Styles {

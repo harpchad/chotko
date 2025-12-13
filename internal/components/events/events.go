@@ -8,6 +8,7 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	zone "github.com/lrstanley/bubblezone"
 
 	"github.com/harpchad/chotko/internal/theme"
 	"github.com/harpchad/chotko/internal/zabbix"
@@ -153,6 +154,34 @@ func (m *Model) GoToBottom() {
 	m.ensureVisible()
 }
 
+// Scroll scrolls the list by delta lines (positive = down, negative = up).
+func (m *Model) Scroll(delta int) {
+	m.offset += delta
+	if m.offset < 0 {
+		m.offset = 0
+	}
+	maxOffset := len(m.filtered) - m.visibleRows()
+	if maxOffset < 0 {
+		maxOffset = 0
+	}
+	if m.offset > maxOffset {
+		m.offset = maxOffset
+	}
+}
+
+// FilteredCount returns the number of filtered items.
+func (m Model) FilteredCount() int {
+	return len(m.filtered)
+}
+
+// SetCursor sets the cursor to a specific index.
+func (m *Model) SetCursor(index int) {
+	if index >= 0 && index < len(m.filtered) {
+		m.cursor = index
+		m.ensureVisible()
+	}
+}
+
 // visibleRows returns the number of visible rows.
 func (m Model) visibleRows() int {
 	return m.height - 2 // Account for header and border
@@ -234,7 +263,9 @@ func (m Model) View() string {
 	for i := m.offset; i < endIdx; i++ {
 		e := m.filtered[i]
 		row := m.renderRow(e, i == m.cursor)
-		b.WriteString(row)
+		// Mark row with zone for mouse click detection
+		rowID := fmt.Sprintf("event_%d", i)
+		b.WriteString(zone.Mark(rowID, row))
 		if i < endIdx-1 {
 			b.WriteString("\n")
 		}

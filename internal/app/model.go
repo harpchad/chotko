@@ -105,6 +105,13 @@ type Model struct {
 	// Context for cancellation
 	ctx    context.Context
 	cancel context.CancelFunc
+
+	// Mouse tracking - pane bounds for scroll detection
+	listPaneX     int // X position where list pane starts (0)
+	listPaneWidth int // Width of list pane including borders
+	detailPaneX   int // X position where detail pane starts
+	contentY      int // Y position where content panes start (after status bar and tab bar)
+	contentHeight int // Height of content area
 }
 
 // New creates a new application model.
@@ -366,6 +373,13 @@ func (m *Model) SetSize(width, height int) {
 	availableWidth := width - 4 // 4 = 2 borders per pane * 2 panes
 	listWidth := availableWidth * 45 / 100
 	detailWidth := availableWidth - listWidth
+
+	// Store pane bounds for mouse tracking
+	m.listPaneX = 0
+	m.listPaneWidth = listWidth + 2 // Include left+right border
+	m.detailPaneX = m.listPaneWidth
+	m.contentY = statusBarHeight + tabBarHeight // Y position after status bar and tab bar
+	m.contentHeight = contentHeight + 2         // Include top+bottom border
 
 	m.alertList.SetSize(listWidth, contentHeight)
 	m.hostList.SetSize(listWidth, contentHeight)

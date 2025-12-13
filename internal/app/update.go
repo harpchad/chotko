@@ -1,11 +1,13 @@
 package app
 
 import (
+	"fmt"
 	"strconv"
 	"time"
 
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
+	zone "github.com/lrstanley/bubblezone"
 
 	"github.com/harpchad/chotko/internal/components/command"
 	"github.com/harpchad/chotko/internal/components/graphs"
@@ -34,6 +36,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.SetSize(msg.Width, msg.Height)
 		m.errorModal.SetScreenSize(msg.Width, msg.Height)
 		return m, nil
+
+	case tea.MouseMsg:
+		return m.handleMouseMsg(msg)
 
 	case tea.KeyMsg:
 		return m.handleKeyMsg(msg)
@@ -612,6 +617,173 @@ func (m *Model) cycleFocus(direction int) {
 
 	// Update new pane focus
 	switch m.focused {
+	case PaneList:
+		m.updateListFocus()
+	case PaneDetail:
+		m.detailPane.SetFocused(true)
+	}
+}
+
+// handleMouseMsg processes mouse input.
+func (m Model) handleMouseMsg(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
+	// Scroll speed: 3 lines per wheel tick
+	const scrollSpeed = 3
+
+	// Handle scroll wheel - scrolls pane under mouse, not focused pane
+	switch msg.Button {
+	case tea.MouseButtonWheelUp:
+		return m.handleScroll(-scrollSpeed, msg.X, msg.Y)
+	case tea.MouseButtonWheelDown:
+		return m.handleScroll(scrollSpeed, msg.X, msg.Y)
+	}
+
+	// Handle left click release (not press, to avoid double-firing)
+	if msg.Action == tea.MouseActionRelease && msg.Button == tea.MouseButtonLeft {
+		return m.handleClick(msg.X, msg.Y)
+	}
+
+	return m, nil
+}
+
+// handleScroll handles scroll wheel events, scrolling the pane under the mouse.
+func (m Model) handleScroll(delta int, mouseX, mouseY int) (tea.Model, tea.Cmd) {
+	// Check if mouse is in content area (not in status bar, tab bar, or command bar)
+	if mouseY < m.contentY || mouseY >= m.contentY+m.contentHeight {
+		return m, nil
+	}
+
+	// Determine which pane the mouse is over and scroll it
+	if mouseX < m.listPaneWidth {
+		// Mouse is over list pane - scroll the current tab's list
+		switch m.tabBar.Active() {
+		case TabAlerts:
+			m.alertList.Scroll(delta)
+		case TabHosts:
+			m.hostList.Scroll(delta)
+		case TabEvents:
+			m.eventList.Scroll(delta)
+		case TabGraphs:
+			m.graphList.Scroll(delta)
+		}
+	} else {
+		// Mouse is over detail pane
+		m.detailPane.Scroll(delta)
+	}
+
+	return m, nil
+}
+
+// handleClick handles left mouse button clicks.
+func (m Model) handleClick(mouseX, mouseY int) (tea.Model, tea.Cmd) {
+	// Check for tab clicks using zone detection
+	for i := 0; i < 4; i++ {
+		tabID := fmt.Sprintf("tab_%d", i)
+		if zone.Get(tabID).InBounds(tea.MouseMsg{X: mouseX, Y: mouseY}) {
+			return m.switchTab(i)
+		}
+	}
+
+	// Check if click is in content area
+	if mouseY >= m.contentY && mouseY < m.contentY+m.contentHeight {
+		// Determine which pane was clicked and set focus
+		if mouseX < m.listPaneWidth {
+			// Clicked on list pane
+			if m.focused != PaneList {
+				m.setFocus(PaneList)
+			}
+
+			// Check for list item clicks
+			return m.handleListClick(mouseX, mouseY)
+		}
+
+		// Clicked on detail pane
+		if m.focused != PaneDetail {
+			m.setFocus(PaneDetail)
+		}
+	}
+
+	return m, nil
+}
+
+// handleListClick handles clicks on list items.
+func (m Model) handleListClick(mouseX, mouseY int) (tea.Model, tea.Cmd) {
+	switch m.tabBar.Active() {
+	case TabAlerts:
+		// Check for alert row clicks
+		for i := 0; i < m.alertList.FilteredCount(); i++ {
+			rowID := fmt.Sprintf("alert_%d", i)
+			if zone.Get(rowID).InBounds(tea.MouseMsg{X: mouseX, Y: mouseY}) {
+				m.alertList.SetCursor(i)
+				if selected := m.alertList.Selected(); selected != nil {
+					m.detailPane.SetProblem(selected)
+				}
+				return m, nil
+			}
+		}
+	case TabHosts:
+		// Check for host row clicks
+		for i := 0; i < m.hostList.FilteredCount(); i++ {
+			rowID := fmt.Sprintf("host_%d", i)
+			if zone.Get(rowID).InBounds(tea.MouseMsg{X: mouseX, Y: mouseY}) {
+				m.hostList.SetCursor(i)
+				if selected := m.hostList.Selected(); selected != nil {
+					m.detailPane.SetHost(selected)
+				}
+				return m, nil
+			}
+		}
+	case TabEvents:
+		// Check for event row clicks
+		for i := 0; i < m.eventList.FilteredCount(); i++ {
+			rowID := fmt.Sprintf("event_%d", i)
+			if zone.Get(rowID).InBounds(tea.MouseMsg{X: mouseX, Y: mouseY}) {
+				m.eventList.SetCursor(i)
+				if selected := m.eventList.Selected(); selected != nil {
+					m.detailPane.SetEvent(selected)
+				}
+				return m, nil
+			}
+		}
+	case TabGraphs:
+		// Check for graph tree node clicks
+		return m.handleGraphsClick(mouseX, mouseY)
+	}
+
+	return m, nil
+}
+
+// handleGraphsClick handles clicks on the graphs tree view.
+func (m Model) handleGraphsClick(mouseX, mouseY int) (tea.Model, tea.Cmd) {
+	// Check for tree node clicks
+	nodeCount := m.graphList.VisibleNodeCount()
+	for i := 0; i < nodeCount; i++ {
+		nodeID := fmt.Sprintf("graph_node_%d", i)
+		if zone.Get(nodeID).InBounds(tea.MouseMsg{X: mouseX, Y: mouseY}) {
+			// Select and potentially toggle the node
+			cmd := m.graphList.ClickNode(i)
+			if selected := m.graphList.SelectedItem(); selected != nil {
+				history := m.graphList.GetHistory(selected.ItemID)
+				m.detailPane.SetItem(selected, history)
+			}
+			return m, cmd
+		}
+	}
+	return m, nil
+}
+
+// setFocus sets focus to the specified pane.
+func (m *Model) setFocus(pane Pane) {
+	// Clear all focuses
+	m.alertList.SetFocused(false)
+	m.hostList.SetFocused(false)
+	m.eventList.SetFocused(false)
+	m.graphList.SetFocused(false)
+	m.detailPane.SetFocused(false)
+
+	m.focused = pane
+
+	// Set new focus
+	switch pane {
 	case PaneList:
 		m.updateListFocus()
 	case PaneDetail:

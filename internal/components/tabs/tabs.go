@@ -2,9 +2,11 @@
 package tabs
 
 import (
+	"fmt"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+	zone "github.com/lrstanley/bubblezone"
 
 	"github.com/harpchad/chotko/internal/theme"
 )
@@ -77,10 +79,11 @@ func (m Model) View() string {
 
 	for i, t := range m.tabs {
 		var tab string
+		tabID := fmt.Sprintf("tab_%d", i)
 		if i == m.active {
-			tab = m.styles.TabActive.Render("[" + t + "]")
+			tab = m.styles.TabActive.Render(zone.Mark(tabID, "["+t+"]"))
 		} else {
-			tab = m.styles.TabInactive.Render(" " + t + " ")
+			tab = m.styles.TabInactive.Render(zone.Mark(tabID, " "+t+" "))
 		}
 		tabs = append(tabs, tab)
 	}
