@@ -248,7 +248,7 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 // updateTriggerList handles key input for the trigger list.
 func (m Model) updateTriggerList(msg tea.KeyMsg) (Model, tea.Cmd) {
 	switch msg.String() {
-	case "esc", "q":
+	case "esc":
 		m.Hide()
 		return m, nil
 
@@ -269,7 +269,7 @@ func (m Model) updateTriggerList(msg tea.KeyMsg) (Model, tea.Cmd) {
 			}
 		}
 
-	case "e", "enter", " ":
+	case " ":
 		// Toggle enable/disable for selected trigger
 		if len(m.triggers) > 0 {
 			t := &m.triggers[m.triggerCursor].Trigger
@@ -289,7 +289,7 @@ func (m Model) updateTriggerList(msg tea.KeyMsg) (Model, tea.Cmd) {
 // updateMacroList handles key input for the macro list.
 func (m Model) updateMacroList(msg tea.KeyMsg) (Model, tea.Cmd) {
 	switch msg.String() {
-	case "esc", "q":
+	case "esc":
 		m.Hide()
 		return m, nil
 
@@ -560,7 +560,7 @@ func (m Model) viewTriggerList() string {
 	b.WriteString("\n")
 	b.WriteString(strings.Repeat("─", m.width-4))
 	b.WriteString("\n")
-	b.WriteString(m.styles.Subtle.Render("[e/Enter/Space] toggle  [q/Esc] close"))
+	b.WriteString(m.styles.Subtle.Render("[Space] toggle  [Esc] close"))
 
 	return b.String()
 }
@@ -630,7 +630,7 @@ func (m Model) viewMacroList() string {
 	b.WriteString("\n")
 	b.WriteString(strings.Repeat("─", m.width-4))
 	b.WriteString("\n")
-	b.WriteString(m.styles.Subtle.Render("[e]dit value  [d]elete  [q]uit"))
+	b.WriteString(m.styles.Subtle.Render("[e]dit value  [d]elete  [Esc] close"))
 
 	return b.String()
 }
