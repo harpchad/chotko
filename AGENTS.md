@@ -16,7 +16,11 @@ golangci-lint run --timeout=5m           # Lint (uses .golangci.yml v2)
 - **Naming**: MixedCaps, no underscores; receivers are single letter (e.g., `m`, `c`)
 
 ## Git Workflow
-**CRITICAL: Never push directly to main. Always use pull requests.**
+
+**CRITICAL RULES:**
+1. **Never push directly to main** - Always use pull requests
+2. **Never use `--admin` flag** - Don't bypass branch protection
+3. **Wait for CI checks to pass** - Don't merge until all checks complete
 
 ```bash
 # 1. Create feature branch
@@ -30,8 +34,8 @@ git push -u origin fix/description
 gh pr create --title "fix: description" --body "## Summary
 - Brief description of changes"
 
-# 4. After CI passes, merge (if authorized)
-gh pr merge --squash --delete-branch
+# 4. Wait for CI, then merge (use --auto if checks still running)
+gh pr merge --squash --delete-branch --auto
 ```
 
 ---
@@ -159,10 +163,13 @@ None currently.
 
 ### Git Workflow
 
-**CRITICAL: NEVER push directly to main. ALWAYS use pull requests.**
+**CRITICAL RULES - NO EXCEPTIONS:**
+1. **NEVER push directly to main** - Always use pull requests
+2. **NEVER use `--admin` flag** - Don't bypass branch protection checks
+3. **ALWAYS wait for CI checks** - Don't merge until all checks pass
 
-This is a strict requirement for all changes, no exceptions. Direct pushes to main
-bypass CI checks, code review, and can break the build for everyone.
+Direct pushes and admin overrides bypass CI checks, code review, and can break
+the build for everyone.
 
 1. Create a feature branch for any changes:
    ```bash
@@ -191,8 +198,12 @@ bypass CI checks, code review, and can break the build for everyone.
    )"
    ```
 
-4. Wait for CI to pass, then merge (if authorized):
+4. Wait for CI checks to pass, then merge:
    ```bash
+   # If checks are still running, use --auto to merge when ready
+   gh pr merge --squash --delete-branch --auto
+
+   # If checks have passed
    gh pr merge --squash --delete-branch
    ```
 
