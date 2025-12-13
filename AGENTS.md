@@ -39,6 +39,76 @@
 
 ---
 
+## Future Roadmap
+
+### Phase 2: Enhanced Monitoring
+
+- [ ] Problem Timeline - horizontal timeline showing problem duration
+- [ ] Trigger Heatmap - visual grid of trigger activity
+- [ ] Event Log Stream - real-time scrolling events
+- [ ] Top N Panel - hosts with highest resource usage
+- [ ] Sparkline graphs for key metrics
+
+### Phase 3: Infrastructure Views
+
+- [ ] Host Group Tree - collapsible navigation
+- [ ] Template Dependency Graph - ASCII visualization
+- [ ] Proxy Status panel
+- [ ] Discovery Status panel
+- [ ] Network map (ASCII topology)
+
+### Phase 4: Advanced Operations
+
+- [ ] Mass Operations - bulk ack/close/suppress
+- [ ] Maintenance Windows - view/create/delete
+- [ ] Script Execution - run scripts on hosts
+- [ ] User Sessions - who's logged into Zabbix
+- [ ] Recent Actions log
+
+### Phase 5: Metrics & Graphs
+
+- [ ] Item history viewer with pagination
+- [ ] Graph rendering (ASCII/braille patterns)
+- [ ] SLA Dashboard - availability percentages
+- [ ] Calculated item viewer
+
+### Phase 6: Advanced Features
+
+- [ ] Multiple server support (switch between Zabbix instances)
+- [ ] SSH tunnel support for secure connections
+- [ ] Notification sounds (terminal bell patterns)
+- [ ] Desktop notifications integration (via notify-send/osascript)
+- [ ] Export to JSON/CSV
+- [ ] Vim mode (full modal editing)
+- [ ] Macro expansion viewer
+
+### Theme Additions
+
+- [ ] High contrast theme (accessibility)
+- [ ] Light mode themes (solarized-light, catppuccin-latte)
+- [ ] Auto-detect terminal background (dark/light)
+- [ ] ANSI-256 fallback themes for limited terminals
+- [ ] ANSI-16 basic fallback
+- [ ] Custom theme hot-reload
+
+### Integration Ideas
+
+- [ ] PagerDuty integration
+- [ ] Slack webhook notifications
+- [ ] Prometheus metrics export
+- [ ] Grafana deep links
+
+### UX Improvements
+
+- [ ] Fuzzy search across all data
+- [ ] Bookmarked/pinned problems
+- [ ] Problem grouping by host/hostgroup
+- [ ] Customizable column layouts
+- [ ] Persistent filters
+- [ ] Session history (undo ack)
+
+---
+
 ## Development Guidelines
 
 ### Git Workflow
@@ -125,6 +195,7 @@ Important: BubbleTea uses value semantics for models. When returning `tea.Cmd` f
 - `event.get` parameters `source` and `object` must be integers, not arrays
 - Use `selectRelatedObject` to get trigger status and filter disabled triggers
 - Host `active_available` values: 0=Unknown, 1=Available, 2=Unavailable
+- `event.acknowledge` response returns eventids as numbers (not strings) in some versions
 
 ### Two-Step Problem Fetching
 
@@ -186,11 +257,14 @@ chotko/
 │       ├── problems.go          # Problem/event fetching
 │       └── hosts.go             # Host fetching
 ├── .github/
-│   ├── workflows/ci.yml         # CI pipeline
+│   ├── workflows/
+│   │   ├── ci.yml               # CI pipeline
+│   │   └── release.yml          # Release automation
 │   └── dependabot.yml           # Dependency updates
 ├── .pre-commit-config.yaml      # Pre-commit hooks
-├── .golangci.yml                # Linter config
-├── AGENTS.ai                     # Future features
-├── AGENTS.md                     # This file
+├── .golangci.yml                # Linter config (v2 format)
+├── AGENTS.md                    # This file
+├── CHANGELOG.md                 # Release changelog
+├── VERSIONING.md                # Versioning strategy
 └── README.md
 ```
