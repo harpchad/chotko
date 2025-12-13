@@ -443,29 +443,25 @@ func (m Model) switchTab(newTab int) (tea.Model, tea.Cmd) {
 
 	// Load data if switching to a different tab type
 	var cmds []tea.Cmd
-	if oldTab != newTab && m.connected && !m.loading {
+	if oldTab != newTab && m.connected {
 		switch newTab {
 		case TabAlerts:
 			if len(m.problems) == 0 {
-				m.loading = true
 				m.statusBar.SetLoading(true)
 				cmds = append(cmds, m.loadProblems())
 			}
 		case TabHosts:
 			if len(m.hosts) == 0 {
-				m.loading = true
 				m.statusBar.SetLoading(true)
 				cmds = append(cmds, m.loadHosts())
 			}
 		case TabEvents:
 			if len(m.events) == 0 {
-				m.loading = true
 				m.statusBar.SetLoading(true)
 				cmds = append(cmds, m.loadEvents())
 			}
 		case TabGraphs:
 			if len(m.items) == 0 {
-				m.loading = true
 				m.statusBar.SetLoading(true)
 				cmds = append(cmds, m.loadItems())
 			}
