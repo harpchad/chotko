@@ -51,11 +51,43 @@ func (m *Model) SetFocused(focused bool) {
 	m.focused = focused
 }
 
-// SetItems updates the items and rebuilds the tree.
+// SetItems updates the items and rebuilds the tree, preserving expanded state.
 func (m *Model) SetItems(items []zabbix.Item, categories []string) {
+	// Save current expanded state before rebuilding
+	expandedNodes := make(map[string]bool)
+	if m.tree != nil {
+		for id, node := range m.tree.AllNodes {
+			if !node.Collapsed {
+				expandedNodes[id] = true
+			}
+		}
+	}
+
+	// Save current selection
+	var selectedID string
+	if selected := m.Selected(); selected != nil {
+		selectedID = selected.ID
+	}
+
+	// Rebuild tree
 	m.tree = BuildTree(items, categories)
-	m.cursor = 0
-	m.offset = 0
+
+	// Restore expanded state
+	for id := range expandedNodes {
+		if node, ok := m.tree.AllNodes[id]; ok {
+			node.Collapsed = false
+		}
+	}
+	m.tree.RebuildFlatList()
+
+	// Restore selection if possible
+	if selectedID != "" {
+		if idx := m.tree.FindNodeIndex(selectedID); idx >= 0 {
+			m.cursor = idx
+			m.ensureVisible()
+		}
+	}
+
 	m.sparklines = make(map[string]string)
 }
 
