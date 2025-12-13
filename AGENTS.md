@@ -59,10 +59,13 @@ gh pr create --title "feat: description" --body "..." && gh pr merge --squash --
 - [x] Events/History tab view
 - [x] Graphs tab view
 - [x] Mouse support (click tabs, items, tree nodes; scroll wheel)
+- [x] Add badges to README (release, build, codecov, Go Report Card, license)
+- [x] Add LICENSE file (MIT)
+- [x] Add SECURITY.md for GitHub security tab
 
 ### TODO
 
-- [ ] Add CI, codecov, and code quality badges to README
+None currently.
 
 ### Known Issues
 

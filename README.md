@@ -1,5 +1,11 @@
 # Chotko
 
+[![Release](https://img.shields.io/github/v/release/harpchad/chotko?style=flat-square)](https://github.com/harpchad/chotko/releases)
+[![CI](https://img.shields.io/github/actions/workflow/status/harpchad/chotko/ci.yml?branch=main&style=flat-square&label=build)](https://github.com/harpchad/chotko/actions/workflows/ci.yml)
+[![codecov](https://img.shields.io/codecov/c/github/harpchad/chotko?style=flat-square)](https://codecov.io/gh/harpchad/chotko)
+[![Go Report Card](https://goreportcard.com/badge/github.com/harpchad/chotko?style=flat-square)](https://goreportcard.com/report/github.com/harpchad/chotko)
+[![License](https://img.shields.io/github/license/harpchad/chotko?style=flat-square)](LICENSE)
+
 A terminal UI for Zabbix 7.x built with Go and [BubbleTea](https://github.com/charmbracelet/bubbletea).
 
 The name comes from the Russian slang word "чётко" (chotko), meaning "precise" or "on point" - fitting for a monitoring tool.
