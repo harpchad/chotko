@@ -38,6 +38,10 @@ type KeyMap struct {
 	EditMacros    key.Binding
 	ToggleMonitor key.Binding
 
+	// Alert ignoring
+	Ignore      key.Binding
+	ListIgnores key.Binding
+
 	// Filtering
 	Filter         key.Binding
 	ClearFilter    key.Binding
@@ -155,6 +159,16 @@ func DefaultKeyMap() KeyMap {
 			key.WithHelp("e", "enable/disable host"),
 		),
 
+		// Alert ignoring
+		Ignore: key.NewBinding(
+			key.WithKeys("i"),
+			key.WithHelp("i", "ignore alert"),
+		),
+		ListIgnores: key.NewBinding(
+			key.WithKeys("I"),
+			key.WithHelp("I", "list ignores"),
+		),
+
 		// Filtering
 		Filter: key.NewBinding(
 			key.WithKeys("/"),
@@ -209,6 +223,8 @@ func (k KeyMap) FullHelp() [][]key.Binding {
 		{k.Acknowledge, k.AckMessage, k.Refresh},
 		// Host editing
 		{k.EditTriggers, k.EditMacros, k.ToggleMonitor},
+		// Alert ignoring
+		{k.Ignore, k.ListIgnores},
 		// Filtering & Modes
 		{k.Filter, k.ClearFilter, k.Command, k.Help, k.Quit},
 	}

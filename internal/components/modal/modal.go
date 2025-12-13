@@ -75,6 +75,11 @@ func (m *Model) ShowHelp() {
 	m.height = 24
 }
 
+// ShowMessage displays a simple message modal.
+func (m *Model) ShowMessage(title, message string) {
+	m.Show(TypeError, title, message)
+}
+
 // Hide hides the modal.
 func (m *Model) Hide() {
 	m.visible = false
@@ -193,6 +198,14 @@ func (m Model) renderHelp() string {
 				{"t", "Edit triggers"},
 				{"m", "Edit macros"},
 				{"e", "Enable/disable host"},
+			},
+		},
+		{
+			title: "Alert Ignoring (Alerts tab)",
+			keys: [][]string{
+				{"i", "Ignore alert locally"},
+				{"I", "List ignored alerts"},
+				{":unignore N", "Remove ignore rule"},
 			},
 		},
 		{

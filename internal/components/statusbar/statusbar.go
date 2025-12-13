@@ -13,15 +13,16 @@ import (
 
 // Model represents the status bar component.
 type Model struct {
-	styles      *theme.Styles
-	width       int
-	counts      *zabbix.HostCounts
-	connected   bool
-	version     string
-	loading     bool
-	lastUpdate  string
-	minSeverity int
-	textFilter  string
+	styles        *theme.Styles
+	width         int
+	counts        *zabbix.HostCounts
+	connected     bool
+	version       string
+	loading       bool
+	lastUpdate    string
+	minSeverity   int
+	textFilter    string
+	statusMessage string // Temporary status message (takes precedence over filter display)
 }
 
 // New creates a new status bar model.
@@ -63,6 +64,12 @@ func (m *Model) SetFilter(minSeverity int, textFilter string) {
 	m.textFilter = textFilter
 }
 
+// SetStatus sets a temporary status message displayed in the center.
+// Pass empty string to clear the message.
+func (m *Model) SetStatus(message string) {
+	m.statusMessage = message
+}
+
 // HasActiveFilter returns true if any filter is active.
 func (m Model) HasActiveFilter() bool {
 	return m.minSeverity > 0 || m.textFilter != ""
@@ -92,9 +99,11 @@ func (m Model) View() string {
 		left = "Hosts: Loading..."
 	}
 
-	// Center: filter indicator (if active)
+	// Center: status message or filter indicator (status message takes precedence)
 	var center string
-	if m.HasActiveFilter() {
+	if m.statusMessage != "" {
+		center = m.styles.StatusFilter.Render(m.statusMessage)
+	} else if m.HasActiveFilter() {
 		var parts []string
 		if m.minSeverity > 0 {
 			severityNames := []string{"", "Info+", "Warn+", "Avg+", "High+", "Disaster"}

@@ -3,6 +3,7 @@ package app
 import (
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/charmbracelet/bubbles/key"
@@ -12,6 +13,7 @@ import (
 	"github.com/harpchad/chotko/internal/components/command"
 	"github.com/harpchad/chotko/internal/components/editor"
 	"github.com/harpchad/chotko/internal/components/graphs"
+	"github.com/harpchad/chotko/internal/ignores"
 )
 
 // Update handles all incoming messages and updates the model accordingly.
@@ -426,6 +428,11 @@ func (m *Model) loadDataForCurrentTab() []tea.Cmd {
 
 // handleKeyMsg processes keyboard input.
 func (m Model) handleKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	// Handle ignore confirmation mode first
+	if m.awaitingIgnoreConfirm {
+		return m.handleIgnoreConfirm(msg)
+	}
+
 	if m.commandInput.IsActive() {
 		return m.handleCommandInput(msg)
 	}
@@ -533,6 +540,10 @@ func (m Model) handleActionKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd, bool) {
 		return m.handleToggleMonitor()
 	case key.Matches(msg, m.keys.ClearFilter):
 		return m.handleClearFilter()
+	case key.Matches(msg, m.keys.Ignore):
+		return m.handleIgnore()
+	case key.Matches(msg, m.keys.ListIgnores):
+		return m.handleListIgnores()
 	}
 	return m, nil, false
 }
@@ -589,6 +600,122 @@ func (m Model) handleClearFilter() (tea.Model, tea.Cmd, bool) {
 	m.eventList.SetTextFilter("")
 	m.statusBar.SetFilter(0, "")
 	return m, nil, true
+}
+
+// handleIgnore initiates the ignore flow for the selected alert.
+func (m Model) handleIgnore() (tea.Model, tea.Cmd, bool) {
+	// Only works on Alerts tab
+	if m.tabBar.Active() != TabAlerts {
+		return m, nil, true
+	}
+
+	selected := m.alertList.Selected()
+	if selected == nil {
+		return m, nil, true
+	}
+
+	// Get host and trigger info
+	hostID, triggerID := m.getSelectedHostAndTriggerID()
+	if hostID == "" || triggerID == "" {
+		m.statusBar.SetStatus("Cannot ignore: no trigger associated")
+		return m, nil, true
+	}
+
+	// Get human-readable names
+	hostName := selected.HostName()
+	triggerName := selected.Name
+
+	// Check if already ignored
+	if m.ignoreList != nil && m.ignoreList.IsIgnored(hostID, triggerID) {
+		m.statusBar.SetStatus("Already ignored")
+		return m, nil, true
+	}
+
+	// Set up pending ignore and await confirmation
+	m.pendingIgnore = &ignores.Rule{
+		HostID:      hostID,
+		HostName:    hostName,
+		TriggerID:   triggerID,
+		TriggerName: triggerName,
+	}
+	m.awaitingIgnoreConfirm = true
+	m.statusBar.SetStatus(fmt.Sprintf("Ignore %s / %s? (y/n)", hostName, truncate(triggerName, 30)))
+
+	return m, nil, true
+}
+
+// handleIgnoreConfirm handles y/n/esc during ignore confirmation.
+func (m Model) handleIgnoreConfirm(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "y", "Y":
+		// Add the ignore rule
+		if m.ignoreList != nil && m.pendingIgnore != nil {
+			if err := m.ignoreList.Add(*m.pendingIgnore); err != nil {
+				m.statusBar.SetStatus(err.Error())
+			} else {
+				// Save to disk
+				if err := m.ignoreList.Save(); err != nil {
+					m.statusBar.SetStatus(fmt.Sprintf("Ignored (save failed: %v)", err))
+				} else {
+					m.statusBar.SetStatus(fmt.Sprintf("Ignored: %s / %s", m.pendingIgnore.HostName, truncate(m.pendingIgnore.TriggerName, 20)))
+				}
+				// Refresh alerts to hide the ignored one
+				m.alertList.SetIgnoreChecker(m.ignoreList.IsIgnored)
+			}
+		}
+		m.pendingIgnore = nil
+		m.awaitingIgnoreConfirm = false
+		return m, nil
+
+	case "n", "N", "esc":
+		// Cancel
+		m.statusBar.SetStatus("Cancelled")
+		m.pendingIgnore = nil
+		m.awaitingIgnoreConfirm = false
+		return m, nil
+	}
+
+	// Ignore other keys while awaiting confirmation
+	return m, nil
+}
+
+// handleListIgnores shows the list of ignored alerts.
+func (m Model) handleListIgnores() (tea.Model, tea.Cmd, bool) {
+	m.showIgnoresModal()
+	return m, nil, true
+}
+
+// showIgnoresModal displays the ignores list in a modal.
+func (m *Model) showIgnoresModal() {
+	if m.ignoreList == nil || m.ignoreList.Len() == 0 {
+		m.showError = true
+		m.errorModal.ShowMessage("Ignored Alerts", "No ignored alerts.\n\nPress 'i' on an alert to ignore it.")
+		return
+	}
+
+	var sb strings.Builder
+	sb.WriteString("Ignored host/trigger pairs:\n\n")
+
+	rules := m.ignoreList.Rules()
+	for i, rule := range rules {
+		sb.WriteString(fmt.Sprintf("%2d. %s / %s\n", i+1, rule.HostName, truncate(rule.TriggerName, 40)))
+	}
+
+	sb.WriteString("\nUse :unignore N to remove a rule.")
+
+	m.showError = true
+	m.errorModal.ShowMessage("Ignored Alerts", sb.String())
+}
+
+// truncate truncates a string to maxLen characters with ellipsis.
+func truncate(s string, maxLen int) string {
+	if len(s) <= maxLen {
+		return s
+	}
+	if maxLen <= 3 {
+		return s[:maxLen]
+	}
+	return s[:maxLen-3] + "..."
 }
 
 // forwardToFocusedComponent forwards key events to the focused component.
@@ -754,20 +881,63 @@ func (m Model) handleCommandInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 // executeCommand processes a command entered in command mode.
 func (m Model) executeCommand(cmd string) (tea.Model, tea.Cmd) {
-	switch cmd {
-	case "q", "quit", "exit":
+	switch {
+	case cmd == "q" || cmd == "quit" || cmd == "exit":
 		m.Shutdown()
 		return m, tea.Quit
-	case "r", "refresh":
+	case cmd == "r" || cmd == "refresh":
 		if !m.loading && m.connected {
 			m.loading = true
 			m.statusBar.SetLoading(true)
 			return m, tea.Batch(m.loadDataForCurrentTab()...)
 		}
-	case "help":
+	case cmd == "help":
 		m.showHelp = true
 		m.errorModal.ShowHelp()
+	case cmd == "ignores":
+		m.showIgnoresModal()
+	case strings.HasPrefix(cmd, "unignore "):
+		return m.handleUnignoreCommand(cmd)
 	}
+	return m, nil
+}
+
+// handleUnignoreCommand removes an ignore rule by index.
+func (m Model) handleUnignoreCommand(cmd string) (tea.Model, tea.Cmd) {
+	// Parse the index from "unignore N"
+	parts := strings.Fields(cmd)
+	if len(parts) != 2 {
+		m.statusBar.SetStatus("Usage: :unignore N")
+		return m, nil
+	}
+
+	index, err := strconv.Atoi(parts[1])
+	if err != nil || index < 1 {
+		m.statusBar.SetStatus(fmt.Sprintf("Invalid index: %s", parts[1]))
+		return m, nil
+	}
+
+	if m.ignoreList == nil {
+		m.statusBar.SetStatus("No ignore list loaded")
+		return m, nil
+	}
+
+	removed, ok := m.ignoreList.Remove(index)
+	if !ok {
+		m.statusBar.SetStatus(fmt.Sprintf("Invalid index: %d", index))
+		return m, nil
+	}
+
+	// Save to disk
+	if err := m.ignoreList.Save(); err != nil {
+		m.statusBar.SetStatus(fmt.Sprintf("Removed (save failed: %v)", err))
+	} else {
+		m.statusBar.SetStatus(fmt.Sprintf("Removed: %s / %s", removed.HostName, truncate(removed.TriggerName, 20)))
+	}
+
+	// Refresh alerts to show the previously ignored one
+	m.alertList.SetIgnoreChecker(m.ignoreList.IsIgnored)
+
 	return m, nil
 }
 

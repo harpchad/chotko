@@ -112,3 +112,10 @@ type MacroUpdateResultMsg struct {
 	Success bool
 	Err     error
 }
+
+// IgnoreResultMsg is sent after an ignore operation completes.
+type IgnoreResultMsg struct {
+	Added   bool   // true if added, false if removed
+	Message string // status message to display
+	Err     error
+}

@@ -17,6 +17,7 @@ import (
 	"github.com/harpchad/chotko/internal/components/statusbar"
 	"github.com/harpchad/chotko/internal/components/tabs"
 	"github.com/harpchad/chotko/internal/config"
+	"github.com/harpchad/chotko/internal/ignores"
 	"github.com/harpchad/chotko/internal/theme"
 	"github.com/harpchad/chotko/internal/zabbix"
 )
@@ -128,6 +129,11 @@ type Model struct {
 	detailPaneX   int // X position where detail pane starts
 	contentY      int // Y position where content panes start (after status bar and tab bar)
 	contentHeight int // Height of content area
+
+	// Ignore list for locally hiding alerts
+	ignoreList            *ignores.List
+	pendingIgnore         *ignores.Rule // rule awaiting y/n confirmation
+	awaitingIgnoreConfirm bool          // waiting for y/n input
 }
 
 // New creates a new application model.
@@ -148,6 +154,14 @@ func New(cfg *config.Config, t *theme.Theme) *Model {
 		cancel:          cancel,
 	}
 
+	// Load ignore list (errors are logged but don't block startup)
+	ignoreList, err := ignores.Load(config.Dir())
+	if err != nil {
+		// Log but continue - we'll have an empty list
+		_ = err // TODO: add logging when available
+	}
+	m.ignoreList = ignoreList
+
 	// Initialize components
 	m.statusBar = statusbar.New(styles)
 	m.tabBar = tabs.New(styles, []string{"Alerts", "Hosts", "Events", "Graphs"}, 0)
@@ -159,6 +173,11 @@ func New(cfg *config.Config, t *theme.Theme) *Model {
 	m.commandInput = command.New(styles)
 	m.errorModal = modal.New(styles)
 	m.editorPane = editor.New(styles)
+
+	// Set ignore checker on alerts component
+	if m.ignoreList != nil {
+		m.alertList.SetIgnoreChecker(m.ignoreList.IsIgnored)
+	}
 
 	// Set initial focus to alerts list
 	m.alertList.SetFocused(true)
