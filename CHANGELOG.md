@@ -19,6 +19,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Text search filtering
 - Alert acknowledgment
 - Host status overview
+- Events history tab with problem/recovery tracking
+- Graphs tab with time series charts for numeric metrics
+- Mouse support using BubbleZone library:
+  - Click tabs to switch between tabs
+  - Click list items to select them
+  - Click tree nodes to select and expand/collapse
+  - Click panes to change focus
+  - Scroll wheel scrolls pane under mouse cursor
 - Keyboard-driven navigation
 - Configuration wizard for first-time setup
 - Cross-platform support (macOS, Linux, Windows)

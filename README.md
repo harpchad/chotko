@@ -9,9 +9,12 @@ The name comes from the Russian slang word "чётко" (chotko), meaning "preci
 - View active Zabbix alerts with severity-based color coding
 - Acknowledge problems directly from the terminal
 - Host status overview (OK, Problem, Unknown, Maintenance)
+- Events history view with problem/recovery tracking
+- Graphs tab with time series charts for numeric metrics
 - Multiple built-in themes (Nord, Dracula, Gruvbox, Catppuccin, Tokyo Night, Solarized)
 - Custom theme support via YAML
 - Vim-style keyboard navigation
+- Mouse support (click tabs, select items, scroll wheel)
 - Filter alerts by severity or text
 - Auto-refresh with configurable interval
 
@@ -79,6 +82,9 @@ display:
 | `PgUp` / `Ctrl+U` | Page up |
 | `g` / `Home` | Go to top |
 | `G` / `End` | Go to bottom |
+| `]` / `L` | Next tab |
+| `[` / `H` | Previous tab |
+| `F1-F4` | Jump to tab |
 | `Tab` | Next pane |
 | `Shift+Tab` | Previous pane |
 | `a` | Acknowledge selected alert |
@@ -90,6 +96,22 @@ display:
 | `:` | Command mode |
 | `?` | Show help |
 | `q` | Quit |
+
+### Graphs Tab
+
+| Key | Action |
+|-----|--------|
+| `Enter` / `Space` | Toggle expand/collapse |
+| `E` | Expand all nodes |
+| `C` | Collapse all nodes |
+
+## Mouse Support
+
+- **Click tabs** to switch between tabs
+- **Click list items** to select them
+- **Click tree nodes** to select and expand/collapse (Graphs tab)
+- **Click panes** to change focus
+- **Scroll wheel** scrolls the pane under the mouse cursor
 
 ## Themes
 

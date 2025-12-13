@@ -2,6 +2,7 @@ package app
 
 import (
 	"github.com/charmbracelet/lipgloss"
+	zone "github.com/lrstanley/bubblezone"
 )
 
 // View renders the entire application UI.
@@ -37,12 +38,12 @@ func (m Model) View() string {
 	// Join panes horizontally
 	contentArea := lipgloss.JoinHorizontal(lipgloss.Top, listPane, detailPane)
 
-	// Stack everything vertically
-	return lipgloss.JoinVertical(
+	// Stack everything vertically and scan for mouse zones
+	return zone.Scan(lipgloss.JoinVertical(
 		lipgloss.Left,
 		statusBar,
 		tabBar,
 		contentArea,
 		commandBar,
-	)
+	))
 }

@@ -6,6 +6,7 @@ import (
 	"os"
 
 	tea "github.com/charmbracelet/bubbletea"
+	zone "github.com/lrstanley/bubblezone"
 	flag "github.com/spf13/pflag"
 
 	"github.com/harpchad/chotko/internal/app"
@@ -102,6 +103,9 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Warning: Could not load theme '%s', using default: %v\n", cfg.Display.Theme, err)
 		t = theme.DefaultTheme()
 	}
+
+	// Initialize mouse zone manager for click detection
+	zone.NewGlobal()
 
 	// Create and run the application
 	model := app.New(cfg, t)

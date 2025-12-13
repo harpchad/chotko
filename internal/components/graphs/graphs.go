@@ -8,6 +8,7 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	zone "github.com/lrstanley/bubblezone"
 
 	"github.com/harpchad/chotko/internal/theme"
 	"github.com/harpchad/chotko/internal/zabbix"
@@ -339,7 +340,9 @@ func (m Model) View() string {
 			continue
 		}
 		row := m.renderNode(node, i == m.cursor)
-		b.WriteString(row)
+		// Mark row with zone for mouse click detection
+		nodeID := fmt.Sprintf("graph_node_%d", i)
+		b.WriteString(zone.Mark(nodeID, row))
 		if i < endIdx-1 {
 			b.WriteString("\n")
 		}
@@ -556,4 +559,53 @@ func (m *Model) SetHostLoading(hostID string, loading bool) {
 // IsHostLoading returns true if the host is currently loading history.
 func (m Model) IsHostLoading(hostID string) bool {
 	return m.loadingHosts[hostID]
+}
+
+// Scroll scrolls the list by delta lines (positive = down, negative = up).
+func (m *Model) Scroll(delta int) {
+	m.offset += delta
+	if m.offset < 0 {
+		m.offset = 0
+	}
+	maxOffset := m.tree.VisibleCount() - m.visibleRows()
+	if maxOffset < 0 {
+		maxOffset = 0
+	}
+	if m.offset > maxOffset {
+		m.offset = maxOffset
+	}
+}
+
+// VisibleNodeCount returns the number of currently visible nodes.
+func (m Model) VisibleNodeCount() int {
+	return m.tree.VisibleCount()
+}
+
+// ClickNode handles a click on a tree node at the given visible index.
+// It selects the node and toggles expansion if it's a parent node.
+// Returns a command if history needs to be loaded.
+func (m *Model) ClickNode(visibleIndex int) tea.Cmd {
+	if visibleIndex < 0 || visibleIndex >= m.tree.VisibleCount() {
+		return nil
+	}
+
+	m.cursor = visibleIndex
+	m.ensureVisible()
+
+	node := m.Selected()
+	if node == nil {
+		return nil
+	}
+
+	// Toggle expand/collapse for parent nodes (host or category)
+	if node.Type == NodeTypeHost || node.Type == NodeTypeCategory {
+		if hostID := m.Toggle(); hostID != "" {
+			// Host was expanded and needs history
+			return func() tea.Msg {
+				return HostExpandedMsg{HostID: hostID}
+			}
+		}
+	}
+
+	return nil
 }

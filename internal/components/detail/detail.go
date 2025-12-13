@@ -120,6 +120,15 @@ func (m *Model) ScrollDown() {
 	m.scroll++
 }
 
+// Scroll scrolls the detail view by delta lines (positive = down, negative = up).
+func (m *Model) Scroll(delta int) {
+	m.scroll += delta
+	if m.scroll < 0 {
+		m.scroll = 0
+	}
+	// Note: maxScroll isn't bounded here as it depends on dynamic content
+}
+
 // Init implements tea.Model.
 func (m Model) Init() tea.Cmd {
 	return nil
