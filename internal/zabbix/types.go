@@ -223,9 +223,44 @@ func (h *Host) InMaintenance() bool {
 	return h.MaintenanceStatus == "1"
 }
 
-// IsAvailable returns the availability status.
-// Returns: 1=available, 0=unavailable, 2=unknown
+// IsAvailable returns the availability status based on all interfaces.
+// Zabbix interface.available values: 0=unknown, 1=available, 2=unavailable
+// Returns: 1=available (any interface OK), 2=unavailable (all interfaces down), 0=unknown (no data)
 func (h *Host) IsAvailable() int {
+	// First check interfaces - this is the most reliable method
+	// as it covers all interface types (agent, SNMP, IPMI, JMX)
+	if len(h.Interfaces) > 0 {
+		hasAvailable := false
+		hasUnavailable := false
+		hasUnknown := false
+
+		for _, iface := range h.Interfaces {
+			switch iface.Available {
+			case "1":
+				hasAvailable = true
+			case "2":
+				hasUnavailable = true
+			default:
+				hasUnknown = true
+			}
+		}
+
+		// If any interface is available, host is available
+		if hasAvailable {
+			return 1
+		}
+		// If any interface is unavailable (and none available), host is unavailable
+		if hasUnavailable {
+			return 2
+		}
+		// All interfaces are unknown
+		if hasUnknown {
+			return 0
+		}
+	}
+
+	// Fallback to active_available for hosts without interface data
+	// (shouldn't happen with proper selectInterfaces, but just in case)
 	a, _ := strconv.Atoi(h.ActiveAvailable)
 	return a
 }

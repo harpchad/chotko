@@ -294,18 +294,70 @@ func TestHost_IsAvailable(t *testing.T) {
 	tests := []struct {
 		name            string
 		activeAvailable string
+		interfaces      []Interface
 		want            int
 	}{
-		{"unknown (0)", "0", 0},
-		{"available (1)", "1", 1},
-		{"unavailable (2)", "2", 2},
-		{"empty", "", 0},
-		{"invalid", "invalid", 0},
+		// Interface-based availability (takes precedence)
+		{
+			name:       "interface available",
+			interfaces: []Interface{{Available: "1"}},
+			want:       1,
+		},
+		{
+			name:       "interface unavailable",
+			interfaces: []Interface{{Available: "2"}},
+			want:       2,
+		},
+		{
+			name:       "interface unknown",
+			interfaces: []Interface{{Available: "0"}},
+			want:       0,
+		},
+		{
+			name:       "mixed interfaces - one available",
+			interfaces: []Interface{{Available: "2"}, {Available: "1"}, {Available: "0"}},
+			want:       1, // Any available = host available
+		},
+		{
+			name:       "mixed interfaces - none available, one unavailable",
+			interfaces: []Interface{{Available: "2"}, {Available: "0"}},
+			want:       2, // No available, but has unavailable = host unavailable
+		},
+		{
+			name:       "all interfaces unknown",
+			interfaces: []Interface{{Available: "0"}, {Available: "0"}},
+			want:       0,
+		},
+		// Fallback to activeAvailable when no interfaces
+		{
+			name:            "no interfaces - fallback unknown",
+			activeAvailable: "0",
+			interfaces:      []Interface{},
+			want:            0,
+		},
+		{
+			name:            "no interfaces - fallback available",
+			activeAvailable: "1",
+			interfaces:      []Interface{},
+			want:            1,
+		},
+		{
+			name:            "no interfaces - fallback unavailable",
+			activeAvailable: "2",
+			interfaces:      []Interface{},
+			want:            2,
+		},
+		{
+			name:            "nil interfaces - fallback",
+			activeAvailable: "1",
+			interfaces:      nil,
+			want:            1,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			h := Host{ActiveAvailable: tt.activeAvailable}
+			h := Host{ActiveAvailable: tt.activeAvailable, Interfaces: tt.interfaces}
 			if got := h.IsAvailable(); got != tt.want {
 				t.Errorf("IsAvailable() = %d, want %d", got, tt.want)
 			}
