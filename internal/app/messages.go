@@ -50,12 +50,6 @@ type ErrorMsg struct {
 // ClearErrorMsg clears the current error display.
 type ClearErrorMsg struct{}
 
-// ConfigLoadedMsg is sent when configuration is loaded.
-type ConfigLoadedMsg struct {
-	Success bool
-	Err     error
-}
-
 // ConnectedMsg is sent when successfully connected to Zabbix.
 type ConnectedMsg struct {
 	Version string
@@ -67,33 +61,10 @@ type DisconnectedMsg struct {
 	Err error
 }
 
-// FilterChangedMsg is sent when the filter changes.
-type FilterChangedMsg struct {
-	MinSeverity int
-	TextFilter  string
-}
-
-// CommandExecutedMsg is sent after a command is executed.
-type CommandExecutedMsg struct {
-	Command string
-	Result  string
-	Err     error
-}
-
-// WizardCompleteMsg is sent when the setup wizard completes.
-type WizardCompleteMsg struct {
-	Success bool
-}
-
 // ItemsLoadedMsg is sent when items are loaded from Zabbix.
 type ItemsLoadedMsg struct {
 	Items []zabbix.Item
 	Err   error
-}
-
-// HostHistoryRequestMsg requests history loading for a specific host's items.
-type HostHistoryRequestMsg struct {
-	HostID string
 }
 
 // HostHistoryLoadedMsg is sent when history for a specific host is loaded.
@@ -101,12 +72,6 @@ type HostHistoryLoadedMsg struct {
 	HostID  string
 	History map[string][]zabbix.History
 	Err     error
-}
-
-// HostDetailsLoadedMsg is sent when detailed host info (with macros/triggers) is loaded.
-type HostDetailsLoadedMsg struct {
-	Host *zabbix.Host
-	Err  error
 }
 
 // HostTriggersLoadedMsg is sent when triggers for a host are loaded.
@@ -146,15 +111,4 @@ type MacroUpdateResultMsg struct {
 	Action  string // "create", "update", "delete"
 	Success bool
 	Err     error
-}
-
-// OpenEditorMsg triggers opening an editor modal.
-type OpenEditorMsg struct {
-	Type string      // "host", "trigger", "macro"
-	Data interface{} // The object to edit
-}
-
-// CloseEditorMsg triggers closing the editor modal.
-type CloseEditorMsg struct {
-	Saved bool
 }

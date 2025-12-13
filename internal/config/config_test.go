@@ -350,33 +350,34 @@ func TestConfig_Validate(t *testing.T) {
 	}
 }
 
-func TestConfig_Validate_FixesRefreshInterval(t *testing.T) {
+func TestConfig_Validate_RejectsLowRefreshInterval(t *testing.T) {
 	cfg := &Config{
 		Server:  ServerConfig{URL: "https://zabbix.example.com"},
 		Auth:    AuthConfig{Token: "test-token"},
 		Display: DisplayConfig{RefreshInterval: 2}, // Less than minimum
 	}
 
-	if err := cfg.Validate(); err != nil {
-		t.Fatalf("Validate() error = %v", err)
+	err := cfg.Validate()
+	if err == nil {
+		t.Fatal("Validate() should return error for refresh interval < 5")
 	}
 
-	if cfg.Display.RefreshInterval != 5 {
-		t.Errorf("RefreshInterval = %d, want 5 (minimum)", cfg.Display.RefreshInterval)
+	if !contains(err.Error(), "refresh interval") {
+		t.Errorf("Validate() error = %q, want to contain 'refresh interval'", err.Error())
 	}
 }
 
-func TestConfig_Validate_FixesSeverity(t *testing.T) {
+func TestConfig_Validate_Severity(t *testing.T) {
 	tests := []struct {
-		name         string
-		severity     int
-		wantSeverity int
+		name     string
+		severity int
+		wantErr  bool
 	}{
-		{"negative", -1, 0},
-		{"too high", 10, 0},
-		{"valid low", 0, 0},
-		{"valid high", 5, 5},
-		{"valid mid", 3, 3},
+		{"negative", -1, true},
+		{"too high", 10, true},
+		{"valid low", 0, false},
+		{"valid high", 5, false},
+		{"valid mid", 3, false},
 	}
 
 	for _, tt := range tests {
@@ -387,12 +388,12 @@ func TestConfig_Validate_FixesSeverity(t *testing.T) {
 				Display: DisplayConfig{RefreshInterval: 30, MinSeverity: tt.severity},
 			}
 
-			if err := cfg.Validate(); err != nil {
-				t.Fatalf("Validate() error = %v", err)
+			err := cfg.Validate()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Validate() error = %v, wantErr %v", err, tt.wantErr)
 			}
-
-			if cfg.Display.MinSeverity != tt.wantSeverity {
-				t.Errorf("MinSeverity = %d, want %d", cfg.Display.MinSeverity, tt.wantSeverity)
+			if tt.wantErr && err != nil && !contains(err.Error(), "severity") {
+				t.Errorf("Validate() error = %q, want to contain 'severity'", err.Error())
 			}
 		})
 	}

@@ -607,10 +607,9 @@ func (m Model) forwardToFocusedComponent(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 // switchTab switches to a new tab and loads appropriate data.
 func (m Model) switchTab(newTab int) (tea.Model, tea.Cmd) {
 	// Wrap around
-	tabCount := 4 // Alerts, Hosts, Events, Graphs
 	if newTab < 0 {
-		newTab = tabCount - 1
-	} else if newTab >= tabCount {
+		newTab = TabCount - 1
+	} else if newTab >= TabCount {
 		newTab = 0
 	}
 

@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"sync"
 	"sync/atomic"
 	"time"
 )
@@ -17,6 +18,7 @@ import (
 type Client struct {
 	baseURL    string
 	httpClient *http.Client
+	tokenMu    sync.RWMutex
 	token      string // API token or session token
 	requestID  int64
 }
@@ -94,7 +96,16 @@ func NewClient(baseURL string, opts ...ClientOption) *Client {
 
 // SetToken sets the API token for authentication.
 func (c *Client) SetToken(token string) {
+	c.tokenMu.Lock()
 	c.token = token
+	c.tokenMu.Unlock()
+}
+
+// getToken returns the current token (thread-safe).
+func (c *Client) getToken() string {
+	c.tokenMu.RLock()
+	defer c.tokenMu.RUnlock()
+	return c.token
 }
 
 // nextID returns the next request ID.
@@ -132,8 +143,10 @@ func (c *Client) callWithAuth(ctx context.Context, method string, params interfa
 	}
 
 	httpReq.Header.Set("Content-Type", "application/json-rpc")
-	if useAuth && c.token != "" {
-		httpReq.Header.Set("Authorization", "Bearer "+c.token)
+	if useAuth {
+		if token := c.getToken(); token != "" {
+			httpReq.Header.Set("Authorization", "Bearer "+token)
+		}
 	}
 
 	resp, err := c.httpClient.Do(httpReq)
@@ -181,13 +194,13 @@ func (c *Client) Login(ctx context.Context, username, password string) error {
 		return fmt.Errorf("login failed: %w", err)
 	}
 
-	c.token = token
+	c.SetToken(token)
 	return nil
 }
 
 // Logout invalidates the current session token.
 func (c *Client) Logout(ctx context.Context) error {
-	if c.token == "" {
+	if c.getToken() == "" {
 		return nil
 	}
 
@@ -196,7 +209,7 @@ func (c *Client) Logout(ctx context.Context) error {
 		return fmt.Errorf("logout failed: %w", err)
 	}
 
-	c.token = ""
+	c.SetToken("")
 	return nil
 }
 

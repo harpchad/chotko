@@ -36,6 +36,19 @@ const (
 	TabHosts  = 1
 	TabEvents = 2
 	TabGraphs = 3
+	TabCount  = 4
+)
+
+// Layout constants for UI rendering.
+const (
+	ListWidthPercent   = 45 // Percentage of width for list pane
+	DetailWidthPercent = 55 // Percentage of width for detail pane
+	LogoutTimeout      = 5  // Seconds to wait for logout on shutdown
+)
+
+// Zabbix object type constants.
+const (
+	ObjectTypeTrigger = "0" // Trigger-based problem
 )
 
 // Mode represents the current input mode.
@@ -521,10 +534,10 @@ func (m *Model) SetSize(width, height int) {
 	commandHeight := 1
 	contentHeight := height - statusBarHeight - tabBarHeight - commandHeight - 4 // borders
 
-	// Split width: 45% list, 55% detail
+	// Split width based on defined percentages
 	// Account for borders: each pane has 2 chars (left+right border)
 	availableWidth := width - 4 // 4 = 2 borders per pane * 2 panes
-	listWidth := availableWidth * 45 / 100
+	listWidth := availableWidth * ListWidthPercent / 100
 	detailWidth := availableWidth - listWidth
 
 	// Store pane bounds for mouse tracking
@@ -547,10 +560,14 @@ func (m *Model) SetSize(width, height int) {
 
 // Shutdown performs cleanup.
 func (m *Model) Shutdown() {
-	m.cancel()
+	// Logout before cancelling context so the request can complete
 	if m.client != nil {
-		_ = m.client.Logout(m.ctx)
+		// Use a short timeout context for logout, not the cancelled one
+		ctx, cancel := context.WithTimeout(context.Background(), LogoutTimeout*time.Second)
+		defer cancel()
+		_ = m.client.Logout(ctx)
 	}
+	m.cancel()
 }
 
 // getSelectedHostID returns the host ID for the currently selected item.
@@ -569,7 +586,7 @@ func (m *Model) getSelectedHostAndTriggerID() (hostID, triggerID string) {
 		if selected := m.alertList.Selected(); selected != nil && len(selected.Hosts) > 0 {
 			hostID = selected.Hosts[0].HostID
 			// ObjectID is the trigger ID for trigger-based problems
-			if selected.Object == "0" { // 0 = trigger
+			if selected.Object == ObjectTypeTrigger {
 				triggerID = selected.ObjectID
 			}
 			// Also check RelatedObject

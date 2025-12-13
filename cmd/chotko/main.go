@@ -37,9 +37,9 @@ func main() {
 
 	flag.StringVarP(&configPath, "config", "c", "", "Path to config file")
 	flag.StringVarP(&serverURL, "server", "s", "", "Zabbix server URL")
-	flag.StringVarP(&apiToken, "token", "t", "", "API token")
+	flag.StringVarP(&apiToken, "token", "t", "", "API token (or use CHOTKO_TOKEN env var)")
 	flag.StringVarP(&username, "user", "u", "", "Username")
-	flag.StringVarP(&password, "password", "p", "", "Password")
+	flag.StringVarP(&password, "password", "p", "", "Password (or use CHOTKO_PASSWORD env var)")
 	flag.StringVar(&themeName, "theme", "", "Theme name")
 	flag.IntVarP(&refresh, "refresh", "r", 0, "Refresh interval in seconds")
 	flag.IntVar(&minSeverity, "min-severity", -1, "Minimum severity (0-5)")
@@ -47,6 +47,17 @@ func main() {
 	flag.BoolVarP(&showHelp, "help", "h", false, "Show help")
 
 	flag.Parse()
+
+	// Support environment variables for sensitive data
+	if serverURL == "" {
+		serverURL = os.Getenv("CHOTKO_SERVER")
+	}
+	if apiToken == "" {
+		apiToken = os.Getenv("CHOTKO_TOKEN")
+	}
+	if password == "" {
+		password = os.Getenv("CHOTKO_PASSWORD")
+	}
 
 	if showHelp {
 		printUsage()
@@ -166,15 +177,24 @@ Flags:
   -h, --help              Show this help
   -v, --version           Show version
 
+Environment Variables:
+  CHOTKO_SERVER    Zabbix server URL
+  CHOTKO_TOKEN     API token (recommended over CLI flag)
+  CHOTKO_PASSWORD  Password (recommended over CLI flag)
+
 Examples:
   # Run with config file (or setup wizard if none exists)
   chotko
 
-  # Connect with API token
+  # Connect with API token (using env var - recommended)
+  export CHOTKO_TOKEN=YOUR_API_TOKEN
+  chotko -s https://zabbix.example.com
+
+  # Connect with API token (using flag)
   chotko -s https://zabbix.example.com -t YOUR_API_TOKEN
 
   # Connect with username/password
-  chotko -s https://zabbix.example.com -u Admin -p password
+  CHOTKO_PASSWORD=password chotko -s https://zabbix.example.com -u Admin
 
   # Use specific theme
   chotko --theme dracula

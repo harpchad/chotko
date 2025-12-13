@@ -80,6 +80,7 @@ func DefaultConfig() *Config {
 }
 
 // Dir returns the XDG config directory for chotko.
+// Falls back to current directory if home directory cannot be determined.
 func Dir() string {
 	var configBase string
 
@@ -88,7 +89,11 @@ func Dir() string {
 	} else if runtime.GOOS == "windows" {
 		configBase = os.Getenv("APPDATA")
 	} else {
-		home, _ := os.UserHomeDir()
+		home, err := os.UserHomeDir()
+		if err != nil {
+			// Fall back to current directory if home cannot be determined
+			return filepath.Join(".", ".chotko")
+		}
 		configBase = filepath.Join(home, ".config")
 	}
 
@@ -161,7 +166,14 @@ func SaveToFile(cfg *Config, path string) error {
 	return nil
 }
 
+// Config validation constants.
+const (
+	MinRefreshInterval = 5
+	MaxSeverity        = 5
+)
+
 // Validate checks if the configuration is valid for connecting to Zabbix.
+// Returns an error if required fields are missing or values are out of range.
 func (c *Config) Validate() error {
 	if c.Server.URL == "" {
 		return fmt.Errorf("server URL is required")
@@ -171,12 +183,12 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("authentication required: provide either API token or username/password")
 	}
 
-	if c.Display.RefreshInterval < 5 {
-		c.Display.RefreshInterval = 5 // Minimum 5 seconds
+	if c.Display.RefreshInterval < MinRefreshInterval {
+		return fmt.Errorf("refresh interval must be at least %d seconds", MinRefreshInterval)
 	}
 
-	if c.Display.MinSeverity < 0 || c.Display.MinSeverity > 5 {
-		c.Display.MinSeverity = 0
+	if c.Display.MinSeverity < 0 || c.Display.MinSeverity > MaxSeverity {
+		return fmt.Errorf("severity must be between 0 and %d", MaxSeverity)
 	}
 
 	return nil

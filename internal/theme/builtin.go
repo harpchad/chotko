@@ -1,7 +1,11 @@
 // Package theme provides theming support with built-in and custom themes.
 package theme
 
-import "github.com/charmbracelet/lipgloss"
+import (
+	"sync"
+
+	"github.com/charmbracelet/lipgloss"
+)
 
 // Built-in theme names
 const (
@@ -14,17 +18,26 @@ const (
 	ThemeSolarized  = "solarized"
 )
 
+var (
+	builtinThemes     map[string]*Theme
+	builtinThemesOnce sync.Once
+)
+
 // BuiltinThemes returns all available built-in themes.
+// The map is cached after first initialization.
 func BuiltinThemes() map[string]*Theme {
-	return map[string]*Theme{
-		ThemeDefault:    DefaultTheme(),
-		ThemeNord:       NordTheme(),
-		ThemeDracula:    DraculaTheme(),
-		ThemeGruvbox:    GruvboxTheme(),
-		ThemeCatppuccin: CatppuccinTheme(),
-		ThemeTokyoNight: TokyoNightTheme(),
-		ThemeSolarized:  SolarizedTheme(),
-	}
+	builtinThemesOnce.Do(func() {
+		builtinThemes = map[string]*Theme{
+			ThemeDefault:    DefaultTheme(),
+			ThemeNord:       NordTheme(),
+			ThemeDracula:    DraculaTheme(),
+			ThemeGruvbox:    GruvboxTheme(),
+			ThemeCatppuccin: CatppuccinTheme(),
+			ThemeTokyoNight: TokyoNightTheme(),
+			ThemeSolarized:  SolarizedTheme(),
+		}
+	})
+	return builtinThemes
 }
 
 // BuiltinThemeNames returns a list of all built-in theme names.

@@ -17,8 +17,6 @@ type Type int
 // Type constants for different modal dialogs.
 const (
 	TypeError Type = iota
-	TypeInfo
-	TypeConfirm
 	TypeHelp
 )
 
