@@ -138,8 +138,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.items = msg.Items
 		m.graphList.SetItems(msg.Items, m.config.GetGraphCategories())
 
-		// Load history data for items
+		// Load history data for items and update detail pane
 		if m.tabBar.Active() == TabGraphs {
+			// Update detail pane with selected item (history will be empty until it loads)
+			if selected := m.graphList.SelectedItem(); selected != nil {
+				history := m.graphList.GetHistory(selected.ItemID)
+				m.detailPane.SetItem(selected, history)
+			}
 			return m, m.loadItemHistory()
 		}
 		return m, nil
@@ -287,6 +292,8 @@ func (m *Model) loadDataForCurrentTab() []tea.Cmd {
 	case TabEvents:
 		cmds = append(cmds, m.loadEvents())
 	case TabGraphs:
+		// Load both items and history for graphs tab
+		// History will be loaded after ItemsLoadedMsg is received
 		cmds = append(cmds, m.loadItems())
 	default:
 		// For other tabs, load problems by default
@@ -428,37 +435,40 @@ func (m Model) switchTab(newTab int) (tea.Model, tea.Cmd) {
 	m.updateDetailForCurrentTab()
 
 	// Load data if switching to a different tab type
-	var cmd tea.Cmd
+	var cmds []tea.Cmd
 	if oldTab != newTab && m.connected && !m.loading {
 		switch newTab {
 		case TabAlerts:
 			if len(m.problems) == 0 {
 				m.loading = true
 				m.statusBar.SetLoading(true)
-				cmd = m.loadProblems()
+				cmds = append(cmds, m.loadProblems())
 			}
 		case TabHosts:
 			if len(m.hosts) == 0 {
 				m.loading = true
 				m.statusBar.SetLoading(true)
-				cmd = m.loadHosts()
+				cmds = append(cmds, m.loadHosts())
 			}
 		case TabEvents:
 			if len(m.events) == 0 {
 				m.loading = true
 				m.statusBar.SetLoading(true)
-				cmd = m.loadEvents()
+				cmds = append(cmds, m.loadEvents())
 			}
 		case TabGraphs:
 			if len(m.items) == 0 {
 				m.loading = true
 				m.statusBar.SetLoading(true)
-				cmd = m.loadItems()
+				cmds = append(cmds, m.loadItems())
+			} else {
+				// Items already loaded, but load history for them
+				cmds = append(cmds, m.loadItemHistory())
 			}
 		}
 	}
 
-	return m, cmd
+	return m, tea.Batch(cmds...)
 }
 
 // updateListFocus updates the focus state for list components based on current tab.
