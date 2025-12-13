@@ -320,6 +320,24 @@ func TestClient_UnsuppressProblem(t *testing.T) {
 	}
 }
 
+func TestClient_AcknowledgeProblem_NumericEventIDs(t *testing.T) {
+	// Some Zabbix versions return numeric event IDs instead of strings
+	server := newMockServer(t, map[string]mockResponse{
+		"event.acknowledge": {
+			Result: map[string]any{"eventids": []int{123}},
+		},
+	})
+	defer server.Close()
+
+	client := newTestClient(t, server.URL)
+	client.token = "test-token"
+
+	err := client.AcknowledgeProblem(context.Background(), "123", "Acknowledged via API")
+	if err != nil {
+		t.Fatalf("AcknowledgeProblem() with numeric eventids error = %v", err)
+	}
+}
+
 func TestAcknowledgeActionConstants(t *testing.T) {
 	// Verify the action bitmask constants are correct
 	// These are documented in Zabbix API documentation

@@ -170,7 +170,9 @@ func (c *Client) AcknowledgeProblem(ctx context.Context, eventID string, message
 		Message:  message,
 	}
 
-	var result map[string][]string
+	// Result contains eventids but the type varies by Zabbix version (string or number)
+	// We don't need the result, just check if the call succeeded
+	var result interface{}
 	if err := c.call(ctx, "event.acknowledge", params, &result); err != nil {
 		return fmt.Errorf("failed to acknowledge problem: %w", err)
 	}
@@ -191,7 +193,9 @@ func (c *Client) AcknowledgeProblems(ctx context.Context, eventIDs []string, mes
 		Message:  message,
 	}
 
-	var result map[string][]string
+	// Result contains eventids but the type varies by Zabbix version (string or number)
+	// We don't need the result, just check if the call succeeded
+	var result interface{}
 	if err := c.call(ctx, "event.acknowledge", params, &result); err != nil {
 		return fmt.Errorf("failed to acknowledge problems: %w", err)
 	}
@@ -212,7 +216,9 @@ func (c *Client) CloseProblem(ctx context.Context, eventID string, message strin
 		Message:  message,
 	}
 
-	var result map[string][]string
+	// Result contains eventids but the type varies by Zabbix version (string or number)
+	// We don't need the result, just check if the call succeeded
+	var result interface{}
 	if err := c.call(ctx, "event.acknowledge", params, &result); err != nil {
 		return fmt.Errorf("failed to close problem: %w", err)
 	}
@@ -227,7 +233,9 @@ func (c *Client) SuppressProblem(ctx context.Context, eventID string) error {
 		Action:   ActionSuppress,
 	}
 
-	var result map[string][]string
+	// Result contains eventids but the type varies by Zabbix version (string or number)
+	// We don't need the result, just check if the call succeeded
+	var result interface{}
 	if err := c.call(ctx, "event.acknowledge", params, &result); err != nil {
 		return fmt.Errorf("failed to suppress problem: %w", err)
 	}
@@ -242,7 +250,9 @@ func (c *Client) UnsuppressProblem(ctx context.Context, eventID string) error {
 		Action:   ActionUnsuppress,
 	}
 
-	var result map[string][]string
+	// Result contains eventids but the type varies by Zabbix version (string or number)
+	// We don't need the result, just check if the call succeeded
+	var result interface{}
 	if err := c.call(ctx, "event.acknowledge", params, &result); err != nil {
 		return fmt.Errorf("failed to unsuppress problem: %w", err)
 	}
