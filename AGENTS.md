@@ -56,7 +56,7 @@ gh pr create --title "feat: description" --body "..." && gh pr merge --squash --
 ### In Progress
 
 - [x] Hosts tab view (UI exists, needs data integration)
-- [ ] Events/History tab view
+- [x] Events/History tab view
 - [ ] Graphs tab view
 
 ### TODO
@@ -66,7 +66,7 @@ gh pr create --title "feat: description" --body "..." && gh pr merge --squash --
 
 ### Known Issues
 
-1. Tabs switch visually but only Alerts tab has functional content
+1. Graphs tab not yet implemented (shows alerts as fallback)
 
 ---
 
@@ -277,6 +277,8 @@ chotko/
 │   │   ├── alerts/              # Alert list
 │   │   ├── command/             # Command input
 │   │   ├── detail/              # Detail pane
+│   │   ├── events/              # Events history list
+│   │   ├── hosts/               # Hosts list
 │   │   ├── modal/               # Modal dialogs
 │   │   ├── statusbar/           # Status bar
 │   │   └── tabs/                # Tab bar

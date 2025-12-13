@@ -9,6 +9,7 @@ import (
 	"github.com/harpchad/chotko/internal/components/alerts"
 	"github.com/harpchad/chotko/internal/components/command"
 	"github.com/harpchad/chotko/internal/components/detail"
+	"github.com/harpchad/chotko/internal/components/events"
 	"github.com/harpchad/chotko/internal/components/hosts"
 	"github.com/harpchad/chotko/internal/components/modal"
 	"github.com/harpchad/chotko/internal/components/statusbar"
@@ -31,6 +32,7 @@ const (
 const (
 	TabAlerts = 0
 	TabHosts  = 1
+	TabEvents = 2
 )
 
 // Mode represents the current input mode.
@@ -73,6 +75,7 @@ type Model struct {
 	// Data
 	problems   []zabbix.Problem
 	hosts      []zabbix.Host
+	events     []zabbix.Event
 	hostCounts *zabbix.HostCounts
 
 	// Components
@@ -80,6 +83,7 @@ type Model struct {
 	tabBar       tabs.Model
 	alertList    alerts.Model
 	hostList     hosts.Model
+	eventList    events.Model
 	detailPane   detail.Model
 	commandInput command.Model
 
@@ -122,6 +126,7 @@ func New(cfg *config.Config, t *theme.Theme) *Model {
 	m.tabBar = tabs.New(styles, []string{"Alerts", "Hosts", "Events", "Graphs"}, 0)
 	m.alertList = alerts.New(styles)
 	m.hostList = hosts.New(styles)
+	m.eventList = events.New(styles)
 	m.detailPane = detail.New(styles)
 	m.commandInput = command.New(styles)
 	m.errorModal = modal.New(styles)
@@ -254,6 +259,26 @@ func (m *Model) loadHosts() tea.Cmd {
 	}
 }
 
+// loadEvents fetches recent events from Zabbix.
+func (m *Model) loadEvents() tea.Cmd {
+	// Capture values for the goroutine
+	client := m.client
+	ctx := m.ctx
+
+	return func() tea.Msg {
+		if client == nil {
+			return EventsLoadedMsg{Err: nil}
+		}
+
+		// Get events from the last 24 hours, limit to 500
+		events, err := client.GetRecentEvents(ctx, 24, 500)
+		return EventsLoadedMsg{
+			Events: events,
+			Err:    err,
+		}
+	}
+}
+
 // acknowledgeProblem sends an acknowledgment for the selected problem.
 func (m *Model) acknowledgeProblem(message string) tea.Cmd {
 	// Capture values for the goroutine
@@ -293,6 +318,7 @@ func (m *Model) SetSize(width, height int) {
 
 	m.alertList.SetSize(listWidth, contentHeight)
 	m.hostList.SetSize(listWidth, contentHeight)
+	m.eventList.SetSize(listWidth, contentHeight)
 	m.detailPane.SetSize(detailWidth, contentHeight)
 	m.statusBar.SetWidth(width)
 	m.tabBar.SetWidth(width)

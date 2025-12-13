@@ -114,6 +114,16 @@ type HostCounts struct {
 	Total       int
 }
 
+// Event represents a Zabbix event (problem or recovery).
+// Uses the same structure as Problem since event.get returns the same fields.
+type Event = Problem
+
+// EventValue constants.
+const (
+	EventValueOK      = "0" // Recovery/OK event
+	EventValueProblem = "1" // Problem event
+)
+
 // Helper methods
 
 // SeverityInt returns the severity as an integer.
@@ -135,18 +145,38 @@ func (p *Problem) IsSuppressed() bool {
 // StartTime returns the problem start time.
 func (p *Problem) StartTime() time.Time {
 	ts, _ := strconv.ParseInt(p.Clock, 10, 64)
+	if ts <= 0 {
+		return time.Time{}
+	}
 	return time.Unix(ts, 0)
 }
 
 // Duration returns how long the problem has been active.
+// Returns 0 if start time is invalid.
 func (p *Problem) Duration() time.Duration {
-	return time.Since(p.StartTime())
+	start := p.StartTime()
+	if start.IsZero() {
+		return 0
+	}
+	d := time.Since(start)
+	// Sanity check - if duration is negative or unreasonably large, return 0
+	if d < 0 {
+		return 0
+	}
+	return d
 }
 
 // DurationString returns a human-readable duration string.
 func (p *Problem) DurationString() string {
 	d := p.Duration()
+	if d <= 0 {
+		return "-"
+	}
+	return formatDuration(d)
+}
 
+// formatDuration formats a duration as a human-readable string.
+func formatDuration(d time.Duration) string {
 	if d < time.Minute {
 		return fmt.Sprintf("%ds", int(d.Seconds()))
 	}
@@ -206,4 +236,49 @@ func (h *Host) DisplayName() string {
 		return h.Name
 	}
 	return h.Host
+}
+
+// IsRecovery returns true if this is a recovery (OK) event.
+func (p *Problem) IsRecovery() bool {
+	return p.REventID != "" && p.REventID != "0"
+}
+
+// RecoveryTime returns the recovery time if the problem was resolved.
+func (p *Problem) RecoveryTime() time.Time {
+	if p.RClock == "" || p.RClock == "0" {
+		return time.Time{}
+	}
+	ts, _ := strconv.ParseInt(p.RClock, 10, 64)
+	if ts <= 0 {
+		return time.Time{}
+	}
+	return time.Unix(ts, 0)
+}
+
+// ResolvedDuration returns how long the problem lasted before being resolved.
+// Returns 0 if not resolved or if times are invalid.
+func (p *Problem) ResolvedDuration() time.Duration {
+	if !p.IsRecovery() {
+		return 0
+	}
+	start := p.StartTime()
+	end := p.RecoveryTime()
+	if start.IsZero() || end.IsZero() {
+		return 0
+	}
+	d := end.Sub(start)
+	// Sanity check - duration should be positive
+	if d < 0 {
+		return 0
+	}
+	return d
+}
+
+// ResolvedDurationString returns human-readable duration for resolved problems.
+func (p *Problem) ResolvedDurationString() string {
+	d := p.ResolvedDuration()
+	if d <= 0 {
+		return "-"
+	}
+	return formatDuration(d)
 }

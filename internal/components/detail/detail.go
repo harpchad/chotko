@@ -19,6 +19,7 @@ type ViewMode int
 const (
 	ViewModeProblem ViewMode = iota
 	ViewModeHost
+	ViewModeEvent
 )
 
 // Model represents the detail pane component.
@@ -27,6 +28,7 @@ type Model struct {
 	mode    ViewMode
 	problem *zabbix.Problem
 	host    *zabbix.Host
+	event   *zabbix.Event
 	width   int
 	height  int
 	focused bool
@@ -65,6 +67,16 @@ func (m *Model) SetHost(h *zabbix.Host) {
 	m.mode = ViewModeHost
 	m.host = h
 	m.problem = nil
+	m.event = nil
+	m.scroll = 0
+}
+
+// SetEvent sets the event to display.
+func (m *Model) SetEvent(e *zabbix.Event) {
+	m.mode = ViewModeEvent
+	m.event = e
+	m.problem = nil
+	m.host = nil
 	m.scroll = 0
 }
 
@@ -72,6 +84,7 @@ func (m *Model) SetHost(h *zabbix.Host) {
 func (m *Model) Clear() {
 	m.problem = nil
 	m.host = nil
+	m.event = nil
 	m.scroll = 0
 }
 
@@ -107,6 +120,8 @@ func (m Model) View() string {
 	switch m.mode {
 	case ViewModeHost:
 		return m.viewHost()
+	case ViewModeEvent:
+		return m.viewEvent()
 	default:
 		return m.viewProblem()
 	}
@@ -203,6 +218,116 @@ func (m Model) viewProblem() string {
 		lines = append(lines, "")
 		lines = append(lines, strings.Repeat("─", max(0, m.width-4)))
 		lines = append(lines, m.styles.Subtle.Render("[a]ck [A]ck+msg [r]efresh"))
+
+		b.WriteString(m.renderLines(lines))
+	}
+
+	return m.renderPane(b.String())
+}
+
+// viewEvent renders the event detail view.
+func (m Model) viewEvent() string {
+	var b strings.Builder
+
+	// Header
+	b.WriteString(m.styles.PaneTitle.Render("EVENT DETAIL"))
+	b.WriteString("\n")
+	b.WriteString(strings.Repeat("─", max(0, m.width-4)))
+	b.WriteString("\n")
+
+	if m.event == nil {
+		b.WriteString("\n")
+		b.WriteString(m.styles.Subtle.Render("  Select an event to view details"))
+		b.WriteString("\n")
+	} else {
+		e := m.event
+
+		// Build detail lines
+		lines := []string{}
+
+		// Event type (Problem or Recovery)
+		if e.IsRecovery() {
+			lines = append(lines, m.renderFieldStyled("Type", "Recovery (OK)", m.styles.StatusOK))
+		} else {
+			lines = append(lines, m.renderFieldStyled("Type", "Problem", m.styles.StatusProblem))
+		}
+
+		// Host
+		lines = append(lines, m.renderField("Host", e.HostName()))
+
+		// IP Address
+		if ip := e.HostIP(); ip != "" {
+			lines = append(lines, m.renderField("IP", ip))
+		}
+
+		// Trigger/Event name
+		lines = append(lines, m.renderField("Trigger", e.Name))
+
+		// Severity
+		sevName := theme.SeverityName(e.SeverityInt())
+		sevStyle := m.styles.AlertSeverity[e.SeverityInt()]
+		lines = append(lines, m.renderFieldStyled("Severity", sevName, sevStyle))
+
+		// Time
+		lines = append(lines, m.renderField("Time", e.StartTime().Format("2006-01-02 15:04:05")))
+
+		// Duration / Resolved info
+		if e.IsRecovery() {
+			lines = append(lines, m.renderField("Resolved", e.RecoveryTime().Format("2006-01-02 15:04:05")))
+			lines = append(lines, m.renderField("Duration", e.ResolvedDurationString()))
+		} else {
+			lines = append(lines, m.renderField("Duration", e.DurationString()))
+		}
+
+		// Acknowledged
+		if e.IsAcknowledged() {
+			lines = append(lines, m.renderFieldStyled("Ack", "Yes", m.styles.AlertAcked))
+		} else {
+			lines = append(lines, m.renderFieldStyled("Ack", "No", m.styles.Subtle))
+		}
+
+		// Event ID
+		lines = append(lines, m.renderField("Event ID", e.EventID))
+
+		// Recovery Event ID (if resolved)
+		if e.REventID != "" && e.REventID != "0" {
+			lines = append(lines, m.renderField("Recovery ID", e.REventID))
+		}
+
+		// Tags
+		if len(e.Tags) > 0 {
+			lines = append(lines, "")
+			lines = append(lines, m.styles.DetailLabel.Render("Tags:"))
+			for _, tag := range e.Tags {
+				tagStr := tag.Tag
+				if tag.Value != "" {
+					tagStr += "=" + tag.Value
+				}
+				lines = append(lines, "  "+m.styles.DetailTag.Render(tagStr))
+			}
+		}
+
+		// Acknowledgments
+		if len(e.Acknowledges) > 0 {
+			lines = append(lines, "")
+			lines = append(lines, m.styles.DetailLabel.Render("History:"))
+			for _, ack := range e.Acknowledges {
+				user := ack.Username
+				if user == "" {
+					user = "system"
+				}
+				msg := fmt.Sprintf("  %s: %s", user, ack.Message)
+				if len(msg) > m.width-6 {
+					msg = msg[:m.width-9] + "..."
+				}
+				lines = append(lines, m.styles.Subtle.Render(msg))
+			}
+		}
+
+		// Actions hint
+		lines = append(lines, "")
+		lines = append(lines, strings.Repeat("─", max(0, m.width-4)))
+		lines = append(lines, m.styles.Subtle.Render("[r]efresh"))
 
 		b.WriteString(m.renderLines(lines))
 	}

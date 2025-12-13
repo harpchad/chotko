@@ -89,17 +89,17 @@ func TestProblem_StartTime(t *testing.T) {
 		{
 			name:  "zero timestamp",
 			clock: "0",
-			want:  time.Unix(0, 0),
+			want:  time.Time{}, // zero time for invalid clock
 		},
 		{
 			name:  "empty string",
 			clock: "",
-			want:  time.Unix(0, 0), // strconv.ParseInt returns 0 on error
+			want:  time.Time{}, // zero time for invalid clock
 		},
 		{
 			name:  "invalid string",
 			clock: "invalid",
-			want:  time.Unix(0, 0), // strconv.ParseInt returns 0 on error
+			want:  time.Time{}, // zero time for invalid clock
 		},
 	}
 
