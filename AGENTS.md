@@ -36,6 +36,7 @@
 ### TODO
 
 - [ ] Add CI, codecov, and code quality badges to README
+- [ ] Investigate mouse support
 
 ### Known Issues
 
