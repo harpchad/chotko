@@ -28,15 +28,18 @@ type Model struct {
 	sparklines map[string]string
 	// History data: itemID -> []History
 	history map[string][]zabbix.History
+	// Loading state: hostID -> is loading
+	loadingHosts map[string]bool
 }
 
 // New creates a new graphs tree model.
 func New(styles *theme.Styles) Model {
 	return Model{
-		styles:     styles,
-		tree:       NewTree(),
-		sparklines: make(map[string]string),
-		history:    make(map[string][]zabbix.History),
+		styles:       styles,
+		tree:         NewTree(),
+		sparklines:   make(map[string]string),
+		history:      make(map[string][]zabbix.History),
+		loadingHosts: make(map[string]bool),
 	}
 }
 
@@ -217,6 +220,7 @@ func (m *Model) Toggle() string {
 
 	// If a host node was expanded and we don't have history for it, return host ID
 	if node.Type == NodeTypeHost && wasCollapsed && !m.HasHostHistory(node.HostID) {
+		m.SetHostLoading(node.HostID, true)
 		return node.HostID
 	}
 
@@ -374,27 +378,21 @@ func (m Model) renderNode(node *TreeNode, selected bool) string {
 	}
 
 	// Build row content based on node type
+	// When selected, we render plain text to allow the selection background to show
 	var rowContent string
 	switch node.Type {
 	case NodeTypeHost:
-		rowContent = m.renderHostNode(node)
+		rowContent = m.renderHostNode(node, selected)
 	case NodeTypeCategory:
 		rowContent = m.renderCategoryNode(node)
 	case NodeTypeItem:
-		rowContent = m.renderItemNode(node)
-	}
-
-	// Calculate available width for content
-	prefixWidth := len(indent) + len(indicator)
-	contentWidth := m.width - prefixWidth - 4 // margin
-
-	if len(rowContent) > contentWidth {
-		rowContent = rowContent[:contentWidth-3] + "..."
+		rowContent = m.renderItemNode(node, selected)
 	}
 
 	// Combine parts
 	row := indent + indicator + rowContent
 
+	// Apply selection or normal style with full width for proper highlighting
 	if selected {
 		return m.styles.AlertSelected.Width(m.width - 2).Render(row)
 	}
@@ -403,13 +401,21 @@ func (m Model) renderNode(node *TreeNode, selected bool) string {
 }
 
 // renderHostNode renders a host node.
-func (m Model) renderHostNode(node *TreeNode) string {
+func (m Model) renderHostNode(node *TreeNode, _ bool) string {
 	// Count items under this host
 	itemCount := 0
 	for _, cat := range node.Children {
 		itemCount += len(cat.Children)
 	}
-	return fmt.Sprintf("%s (%d)", node.Name, itemCount)
+
+	name := fmt.Sprintf("%s (%d)", node.Name, itemCount)
+
+	// Show loading indicator if history is being loaded
+	if m.loadingHosts[node.HostID] {
+		name += " ⟳"
+	}
+
+	return name
 }
 
 // renderCategoryNode renders a category node.
@@ -418,7 +424,7 @@ func (m Model) renderCategoryNode(node *TreeNode) string {
 }
 
 // renderItemNode renders an item node with value and sparkline.
-func (m Model) renderItemNode(node *TreeNode) string {
+func (m Model) renderItemNode(node *TreeNode, selected bool) string {
 	if node.Item == nil {
 		return node.Name
 	}
@@ -431,7 +437,7 @@ func (m Model) renderItemNode(node *TreeNode) string {
 	// Get sparkline if available
 	spark := ""
 	if sl, ok := m.sparklines[item.ItemID]; ok {
-		spark = "  " + sl
+		spark = sl
 	}
 
 	// Calculate widths
@@ -448,12 +454,20 @@ func (m Model) renderItemNode(node *TreeNode) string {
 		name = name[:nameWidth-3] + "..."
 	}
 
-	// Build the row
+	// When selected, render plain text to allow background highlighting
+	if selected {
+		// Pad value and spark to fixed widths for alignment
+		valuePadded := fmt.Sprintf("%*s", valueWidth, value)
+		sparkPadded := fmt.Sprintf("  %-*s", sparkWidth-2, spark)
+		return fmt.Sprintf("%-*s%s%s", nameWidth, name, valuePadded, sparkPadded)
+	}
+
+	// Build the row with styles for non-selected items
 	nameStyle := m.styles.AlertHost.Width(nameWidth)
 	valueStyle := m.styles.AlertDuration.Width(valueWidth).Align(lipgloss.Right)
-	sparkStyle := m.styles.Subtle
+	sparkStyle := m.styles.Subtle.Width(sparkWidth)
 
-	return nameStyle.Render(name) + valueStyle.Render(value) + sparkStyle.Render(spark)
+	return nameStyle.Render(name) + valueStyle.Render(value) + "  " + sparkStyle.Render(spark)
 }
 
 // formatValue formats a numeric value with appropriate units.
@@ -525,4 +539,21 @@ func (m Model) HasHostHistory(hostID string) bool {
 		}
 	}
 	return false
+}
+
+// SetHostLoading sets the loading state for a host.
+func (m *Model) SetHostLoading(hostID string, loading bool) {
+	if m.loadingHosts == nil {
+		m.loadingHosts = make(map[string]bool)
+	}
+	if loading {
+		m.loadingHosts[hostID] = true
+	} else {
+		delete(m.loadingHosts, hostID)
+	}
+}
+
+// IsHostLoading returns true if the host is currently loading history.
+func (m Model) IsHostLoading(hostID string) bool {
+	return m.loadingHosts[hostID]
 }

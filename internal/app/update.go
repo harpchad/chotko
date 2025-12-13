@@ -154,6 +154,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.loadHostHistory(msg.HostID)
 
 	case HostHistoryLoadedMsg:
+		// Clear loading state for this host
+		m.graphList.SetHostLoading(msg.HostID, false)
+
 		if msg.Err != nil {
 			// Silent fail for history - not critical
 			return m, nil
