@@ -15,6 +15,7 @@ type Config struct {
 	Server  ServerConfig  `yaml:"server"`
 	Auth    AuthConfig    `yaml:"auth"`
 	Display DisplayConfig `yaml:"display"`
+	Graphs  GraphsConfig  `yaml:"graphs,omitempty"`
 }
 
 // ServerConfig holds Zabbix server connection settings.
@@ -36,6 +37,28 @@ type DisplayConfig struct {
 	Theme           string `yaml:"theme"`
 }
 
+// GraphsConfig holds settings for the graphs tab.
+type GraphsConfig struct {
+	// Categories are key prefixes to filter items by (e.g., "system.cpu", "vm.memory")
+	Categories []string `yaml:"categories"`
+	// HistoryHours is how many hours of history to display (default: 3)
+	HistoryHours int `yaml:"history_hours"`
+	// MaxItemsPerHost limits items per host (0 = no limit)
+	MaxItemsPerHost int `yaml:"max_items_per_host"`
+}
+
+// DefaultGraphCategories returns the default item key prefixes for the graphs tab.
+func DefaultGraphCategories() []string {
+	return []string{
+		"system.cpu",
+		"system.load",
+		"vm.memory",
+		"vfs.fs",
+		"net.if",
+		"proc",
+	}
+}
+
 // DefaultConfig returns a config with sensible defaults.
 func DefaultConfig() *Config {
 	return &Config{
@@ -47,6 +70,11 @@ func DefaultConfig() *Config {
 			RefreshInterval: 30,
 			MinSeverity:     0,
 			Theme:           "nord",
+		},
+		Graphs: GraphsConfig{
+			Categories:      DefaultGraphCategories(),
+			HistoryHours:    3,
+			MaxItemsPerHost: 50,
 		},
 	}
 }
@@ -157,4 +185,20 @@ func (c *Config) Validate() error {
 // UseToken returns true if API token authentication should be used.
 func (c *Config) UseToken() bool {
 	return c.Auth.Token != ""
+}
+
+// GetGraphCategories returns the graph categories, using defaults if not configured.
+func (c *Config) GetGraphCategories() []string {
+	if len(c.Graphs.Categories) == 0 {
+		return DefaultGraphCategories()
+	}
+	return c.Graphs.Categories
+}
+
+// GetHistoryHours returns the history hours, using default if not configured.
+func (c *Config) GetHistoryHours() int {
+	if c.Graphs.HistoryHours <= 0 {
+		return 3 // default 3 hours
+	}
+	return c.Graphs.HistoryHours
 }

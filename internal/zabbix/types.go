@@ -317,3 +317,100 @@ func (p *Problem) ResolvedDurationString() string {
 	}
 	return formatDuration(d)
 }
+
+// Item represents a Zabbix item (metric).
+type Item struct {
+	ItemID    string `json:"itemid"`
+	HostID    string `json:"hostid"`
+	Name      string `json:"name"`
+	Key       string `json:"key_"`
+	ValueType string `json:"value_type"` // 0=float, 3=unsigned int (numeric)
+	Units     string `json:"units"`
+	LastValue string `json:"lastvalue"`
+	LastClock string `json:"lastclock"`
+	State     string `json:"state"`  // 0=normal, 1=not supported
+	Status    string `json:"status"` // 0=enabled, 1=disabled
+	Hosts     []Host `json:"hosts,omitempty"`
+}
+
+// ItemValueType constants for numeric items.
+const (
+	ItemValueTypeFloat    = "0" // Numeric (float)
+	ItemValueTypeUnsigned = "3" // Numeric (unsigned)
+)
+
+// History represents a single history data point.
+type History struct {
+	ItemID string `json:"itemid"`
+	Clock  string `json:"clock"`
+	Value  string `json:"value"`
+	NS     string `json:"ns"`
+}
+
+// Helper methods for Item
+
+// IsNumeric returns true if the item has a numeric value type.
+func (i *Item) IsNumeric() bool {
+	return i.ValueType == ItemValueTypeFloat || i.ValueType == ItemValueTypeUnsigned
+}
+
+// IsEnabled returns true if the item is enabled.
+func (i *Item) IsEnabled() bool {
+	return i.Status == "0"
+}
+
+// IsSupported returns true if the item is in normal state (not unsupported).
+func (i *Item) IsSupported() bool {
+	return i.State == "0"
+}
+
+// LastValueFloat returns the last value as a float64.
+func (i *Item) LastValueFloat() float64 {
+	v, _ := strconv.ParseFloat(i.LastValue, 64)
+	return v
+}
+
+// LastTime returns the last data collection time.
+func (i *Item) LastTime() time.Time {
+	ts, _ := strconv.ParseInt(i.LastClock, 10, 64)
+	if ts <= 0 {
+		return time.Time{}
+	}
+	return time.Unix(ts, 0)
+}
+
+// HostName returns the first host name associated with this item.
+func (i *Item) HostName() string {
+	if len(i.Hosts) > 0 {
+		if i.Hosts[0].Name != "" {
+			return i.Hosts[0].Name
+		}
+		return i.Hosts[0].Host
+	}
+	return "Unknown"
+}
+
+// GetHostID returns the host ID for this item.
+func (i *Item) GetHostID() string {
+	if len(i.Hosts) > 0 {
+		return i.Hosts[0].HostID
+	}
+	return i.HostID
+}
+
+// Helper methods for History
+
+// Time returns the history point timestamp.
+func (h *History) Time() time.Time {
+	ts, _ := strconv.ParseInt(h.Clock, 10, 64)
+	if ts <= 0 {
+		return time.Time{}
+	}
+	return time.Unix(ts, 0)
+}
+
+// ValueFloat returns the history value as a float64.
+func (h *History) ValueFloat() float64 {
+	v, _ := strconv.ParseFloat(h.Value, 64)
+	return v
+}

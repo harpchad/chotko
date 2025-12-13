@@ -10,6 +10,7 @@ import (
 	"github.com/harpchad/chotko/internal/components/command"
 	"github.com/harpchad/chotko/internal/components/detail"
 	"github.com/harpchad/chotko/internal/components/events"
+	"github.com/harpchad/chotko/internal/components/graphs"
 	"github.com/harpchad/chotko/internal/components/hosts"
 	"github.com/harpchad/chotko/internal/components/modal"
 	"github.com/harpchad/chotko/internal/components/statusbar"
@@ -33,6 +34,7 @@ const (
 	TabAlerts = 0
 	TabHosts  = 1
 	TabEvents = 2
+	TabGraphs = 3
 )
 
 // Mode represents the current input mode.
@@ -76,6 +78,7 @@ type Model struct {
 	problems   []zabbix.Problem
 	hosts      []zabbix.Host
 	events     []zabbix.Event
+	items      []zabbix.Item
 	hostCounts *zabbix.HostCounts
 
 	// Components
@@ -84,6 +87,7 @@ type Model struct {
 	alertList    alerts.Model
 	hostList     hosts.Model
 	eventList    events.Model
+	graphList    graphs.Model
 	detailPane   detail.Model
 	commandInput command.Model
 
@@ -127,6 +131,7 @@ func New(cfg *config.Config, t *theme.Theme) *Model {
 	m.alertList = alerts.New(styles)
 	m.hostList = hosts.New(styles)
 	m.eventList = events.New(styles)
+	m.graphList = graphs.New(styles)
 	m.detailPane = detail.New(styles)
 	m.commandInput = command.New(styles)
 	m.errorModal = modal.New(styles)
@@ -279,6 +284,47 @@ func (m *Model) loadEvents() tea.Cmd {
 	}
 }
 
+// loadItems fetches numeric items from Zabbix for the graphs tab.
+func (m *Model) loadItems() tea.Cmd {
+	// Capture values for the goroutine
+	client := m.client
+	ctx := m.ctx
+	categories := m.config.GetGraphCategories()
+
+	return func() tea.Msg {
+		if client == nil {
+			return ItemsLoadedMsg{Err: nil}
+		}
+
+		items, err := client.GetAllNumericItems(ctx, categories)
+		return ItemsLoadedMsg{
+			Items: items,
+			Err:   err,
+		}
+	}
+}
+
+// loadItemHistory fetches history data for the currently visible items.
+func (m *Model) loadItemHistory() tea.Cmd {
+	// Capture values for the goroutine
+	client := m.client
+	ctx := m.ctx
+	items := m.items
+	hours := m.config.GetHistoryHours()
+
+	return func() tea.Msg {
+		if client == nil || len(items) == 0 {
+			return HistoryLoadedMsg{History: nil, Err: nil}
+		}
+
+		history, err := client.GetItemsHistory(ctx, items, hours)
+		return HistoryLoadedMsg{
+			History: history,
+			Err:     err,
+		}
+	}
+}
+
 // acknowledgeProblem sends an acknowledgment for the selected problem.
 func (m *Model) acknowledgeProblem(message string) tea.Cmd {
 	// Capture values for the goroutine
@@ -319,6 +365,7 @@ func (m *Model) SetSize(width, height int) {
 	m.alertList.SetSize(listWidth, contentHeight)
 	m.hostList.SetSize(listWidth, contentHeight)
 	m.eventList.SetSize(listWidth, contentHeight)
+	m.graphList.SetSize(listWidth, contentHeight)
 	m.detailPane.SetSize(detailWidth, contentHeight)
 	m.statusBar.SetWidth(width)
 	m.tabBar.SetWidth(width)
