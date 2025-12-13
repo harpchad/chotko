@@ -69,9 +69,34 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.problems = msg.Problems
 		m.alertList.SetProblems(msg.Problems)
 
-		// Update detail pane with selected problem
-		if selected := m.alertList.Selected(); selected != nil {
-			m.detailPane.SetProblem(selected)
+		// Update detail pane with selected problem if on alerts tab
+		if m.tabBar.Active() == TabAlerts {
+			if selected := m.alertList.Selected(); selected != nil {
+				m.detailPane.SetProblem(selected)
+			}
+		}
+		return m, nil
+
+	case HostsLoadedMsg:
+		m.loading = false
+		m.statusBar.SetLoading(false)
+		m.lastRefresh = time.Now()
+		m.statusBar.SetLastUpdate(m.lastRefresh.Format("15:04:05"))
+
+		if msg.Err != nil {
+			m.showError = true
+			m.errorModal.ShowError("Failed to Load Hosts", "Could not retrieve hosts from Zabbix", msg.Err)
+			return m, nil
+		}
+
+		m.hosts = msg.Hosts
+		m.hostList.SetHosts(msg.Hosts)
+
+		// Update detail pane with selected host if on hosts tab
+		if m.tabBar.Active() == TabHosts {
+			if selected := m.hostList.Selected(); selected != nil {
+				m.detailPane.SetHost(selected)
+			}
 		}
 		return m, nil
 
@@ -97,7 +122,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if !m.loading && m.connected {
 			m.loading = true
 			m.statusBar.SetLoading(true)
-			cmds = append(cmds, m.loadProblems(), m.loadHostCounts())
+			cmds = append(cmds, m.loadDataForCurrentTab()...)
 		}
 		cmds = append(cmds, m.tickRefresh())
 		return m, tea.Batch(cmds...)
@@ -113,18 +138,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 
-	// Update focused component
+	// Update focused component based on current tab
 	switch m.focused {
-	case PaneAlerts:
-		var cmd tea.Cmd
-		m.alertList, cmd = m.alertList.Update(msg)
-		if cmd != nil {
-			cmds = append(cmds, cmd)
-		}
-		// Update detail when selection changes
-		if selected := m.alertList.Selected(); selected != nil {
-			m.detailPane.SetProblem(selected)
-		}
+	case PaneList:
+		return m.updateListPane(msg)
 	case PaneDetail:
 		var cmd tea.Cmd
 		m.detailPane, cmd = m.detailPane.Update(msg)
@@ -143,6 +160,53 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	return m, tea.Batch(cmds...)
+}
+
+// updateListPane updates the appropriate list component based on current tab.
+func (m Model) updateListPane(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmds []tea.Cmd
+
+	switch m.tabBar.Active() {
+	case TabAlerts:
+		var cmd tea.Cmd
+		m.alertList, cmd = m.alertList.Update(msg)
+		if cmd != nil {
+			cmds = append(cmds, cmd)
+		}
+		// Update detail when selection changes
+		if selected := m.alertList.Selected(); selected != nil {
+			m.detailPane.SetProblem(selected)
+		}
+	case TabHosts:
+		var cmd tea.Cmd
+		m.hostList, cmd = m.hostList.Update(msg)
+		if cmd != nil {
+			cmds = append(cmds, cmd)
+		}
+		// Update detail when selection changes
+		if selected := m.hostList.Selected(); selected != nil {
+			m.detailPane.SetHost(selected)
+		}
+	}
+
+	return m, tea.Batch(cmds...)
+}
+
+// loadDataForCurrentTab returns commands to load data for the current tab.
+func (m *Model) loadDataForCurrentTab() []tea.Cmd {
+	cmds := []tea.Cmd{m.loadHostCounts()}
+
+	switch m.tabBar.Active() {
+	case TabAlerts:
+		cmds = append(cmds, m.loadProblems())
+	case TabHosts:
+		cmds = append(cmds, m.loadHosts())
+	default:
+		// For other tabs, load problems by default
+		cmds = append(cmds, m.loadProblems())
+	}
+
+	return cmds
 }
 
 // handleKeyMsg processes keyboard input.
@@ -169,26 +233,21 @@ func (m Model) handleKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if !m.loading && m.connected {
 			m.loading = true
 			m.statusBar.SetLoading(true)
-			return m, tea.Batch(m.loadProblems(), m.loadHostCounts())
+			return m, tea.Batch(m.loadDataForCurrentTab()...)
 		}
 		return m, nil
 
 	// Tab navigation
 	case key.Matches(msg, m.keys.NextTab):
-		m.tabBar.Next()
-		return m, nil
+		return m.switchTab(m.tabBar.Active() + 1)
 	case key.Matches(msg, m.keys.PrevTab):
-		m.tabBar.Prev()
-		return m, nil
+		return m.switchTab(m.tabBar.Active() - 1)
 	case key.Matches(msg, m.keys.Tab1):
-		m.tabBar.SetActive(0)
-		return m, nil
+		return m.switchTab(0)
 	case key.Matches(msg, m.keys.Tab2):
-		m.tabBar.SetActive(1)
-		return m, nil
+		return m.switchTab(1)
 	case key.Matches(msg, m.keys.Tab3):
-		m.tabBar.SetActive(2)
-		return m, nil
+		return m.switchTab(2)
 
 	// Pane navigation
 	case key.Matches(msg, m.keys.NextPane):
@@ -198,15 +257,15 @@ func (m Model) handleKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.cycleFocus(-1)
 		return m, nil
 
-	// Acknowledge
+	// Acknowledge (only on alerts tab)
 	case key.Matches(msg, m.keys.Acknowledge):
-		if m.alertList.Selected() != nil {
+		if m.tabBar.Active() == TabAlerts && m.alertList.Selected() != nil {
 			return m, m.acknowledgeProblem("")
 		}
 		return m, nil
 
 	case key.Matches(msg, m.keys.AckMessage):
-		if m.alertList.Selected() != nil {
+		if m.tabBar.Active() == TabAlerts && m.alertList.Selected() != nil {
 			m.mode = ModeAckMessage
 			m.commandInput.SetMode(command.ModeAckMessage)
 		}
@@ -224,12 +283,14 @@ func (m Model) handleKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.commandInput.SetMode(command.ModeCommand)
 		return m, nil
 
-	// Severity filter (0-5)
+	// Severity filter (0-5) - only on alerts tab
 	case key.Matches(msg, m.keys.SeverityFilter):
-		if severity, err := strconv.Atoi(msg.String()); err == nil {
-			m.minSeverity = severity
-			m.alertList.SetMinSeverity(severity)
-			m.statusBar.SetFilter(m.minSeverity, m.textFilter)
+		if m.tabBar.Active() == TabAlerts {
+			if severity, err := strconv.Atoi(msg.String()); err == nil {
+				m.minSeverity = severity
+				m.alertList.SetMinSeverity(severity)
+				m.statusBar.SetFilter(m.minSeverity, m.textFilter)
+			}
 		}
 		return m, nil
 
@@ -239,20 +300,15 @@ func (m Model) handleKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.textFilter = ""
 		m.alertList.SetMinSeverity(0)
 		m.alertList.SetTextFilter("")
+		m.hostList.SetTextFilter("")
 		m.statusBar.SetFilter(0, "")
 		return m, nil
 	}
 
 	// Forward to focused component
 	switch m.focused {
-	case PaneAlerts:
-		var cmd tea.Cmd
-		m.alertList, cmd = m.alertList.Update(msg)
-		// Update detail when selection changes
-		if selected := m.alertList.Selected(); selected != nil {
-			m.detailPane.SetProblem(selected)
-		}
-		return m, cmd
+	case PaneList:
+		return m.updateListPane(msg)
 	case PaneDetail:
 		var cmd tea.Cmd
 		m.detailPane, cmd = m.detailPane.Update(msg)
@@ -260,6 +316,84 @@ func (m Model) handleKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	}
 
 	return m, nil
+}
+
+// switchTab switches to a new tab and loads appropriate data.
+func (m Model) switchTab(newTab int) (tea.Model, tea.Cmd) {
+	// Wrap around
+	tabCount := 4 // Alerts, Hosts, Events, Graphs
+	if newTab < 0 {
+		newTab = tabCount - 1
+	} else if newTab >= tabCount {
+		newTab = 0
+	}
+
+	oldTab := m.tabBar.Active()
+	m.tabBar.SetActive(newTab)
+
+	// Update focus when switching tabs
+	m.updateListFocus()
+
+	// Update detail pane for new tab
+	m.updateDetailForCurrentTab()
+
+	// Load data if switching to a different tab type
+	var cmd tea.Cmd
+	if oldTab != newTab && m.connected && !m.loading {
+		switch newTab {
+		case TabAlerts:
+			if len(m.problems) == 0 {
+				m.loading = true
+				m.statusBar.SetLoading(true)
+				cmd = m.loadProblems()
+			}
+		case TabHosts:
+			if len(m.hosts) == 0 {
+				m.loading = true
+				m.statusBar.SetLoading(true)
+				cmd = m.loadHosts()
+			}
+		}
+	}
+
+	return m, cmd
+}
+
+// updateListFocus updates the focus state for list components based on current tab.
+func (m *Model) updateListFocus() {
+	isFocused := m.focused == PaneList
+
+	switch m.tabBar.Active() {
+	case TabAlerts:
+		m.alertList.SetFocused(isFocused)
+		m.hostList.SetFocused(false)
+	case TabHosts:
+		m.alertList.SetFocused(false)
+		m.hostList.SetFocused(isFocused)
+	default:
+		m.alertList.SetFocused(false)
+		m.hostList.SetFocused(false)
+	}
+}
+
+// updateDetailForCurrentTab updates the detail pane content for the current tab.
+func (m *Model) updateDetailForCurrentTab() {
+	switch m.tabBar.Active() {
+	case TabAlerts:
+		if selected := m.alertList.Selected(); selected != nil {
+			m.detailPane.SetProblem(selected)
+		} else {
+			m.detailPane.SetProblem(nil)
+		}
+	case TabHosts:
+		if selected := m.hostList.Selected(); selected != nil {
+			m.detailPane.SetHost(selected)
+		} else {
+			m.detailPane.SetHost(nil)
+		}
+	default:
+		m.detailPane.Clear()
+	}
 }
 
 // handleCommandInput processes input when in command/filter/ack mode.
@@ -279,10 +413,16 @@ func (m Model) handleCommandInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		switch mode {
 		case command.ModeFilter:
 			m.textFilter = value
-			m.alertList.SetTextFilter(value)
+			// Apply filter to current tab's list
+			switch m.tabBar.Active() {
+			case TabAlerts:
+				m.alertList.SetTextFilter(value)
+			case TabHosts:
+				m.hostList.SetTextFilter(value)
+			}
 			m.statusBar.SetFilter(m.minSeverity, m.textFilter)
 		case command.ModeAckMessage:
-			if m.alertList.Selected() != nil {
+			if m.tabBar.Active() == TabAlerts && m.alertList.Selected() != nil {
 				return m, m.acknowledgeProblem(value)
 			}
 		case command.ModeCommand:
@@ -307,7 +447,7 @@ func (m Model) executeCommand(cmd string) (tea.Model, tea.Cmd) {
 		if !m.loading && m.connected {
 			m.loading = true
 			m.statusBar.SetLoading(true)
-			return m, tea.Batch(m.loadProblems(), m.loadHostCounts())
+			return m, tea.Batch(m.loadDataForCurrentTab()...)
 		}
 	case "help":
 		m.showHelp = true
@@ -320,8 +460,9 @@ func (m Model) executeCommand(cmd string) (tea.Model, tea.Cmd) {
 func (m *Model) cycleFocus(direction int) {
 	// Update current pane focus
 	switch m.focused {
-	case PaneAlerts:
+	case PaneList:
 		m.alertList.SetFocused(false)
+		m.hostList.SetFocused(false)
 	case PaneDetail:
 		m.detailPane.SetFocused(false)
 	}
@@ -335,8 +476,8 @@ func (m *Model) cycleFocus(direction int) {
 
 	// Update new pane focus
 	switch m.focused {
-	case PaneAlerts:
-		m.alertList.SetFocused(true)
+	case PaneList:
+		m.updateListFocus()
 	case PaneDetail:
 		m.detailPane.SetFocused(true)
 	}

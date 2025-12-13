@@ -74,7 +74,7 @@ func (m *Model) ShowHelp() {
 	m.modalType = TypeHelp
 	m.title = "Keyboard Shortcuts"
 	m.width = 50
-	m.height = 20
+	m.height = 24
 }
 
 // Hide hides the modal.
@@ -168,6 +168,14 @@ func (m Model) renderHelp() string {
 				{"PgDn/Ctrl+D", "Page down"},
 				{"Home/g", "Go to top"},
 				{"End/G", "Go to bottom"},
+			},
+		},
+		{
+			title: "Tabs & Panes",
+			keys: [][]string{
+				{"]/L", "Next tab"},
+				{"[/H", "Previous tab"},
+				{"F1-F3", "Jump to tab"},
 				{"Tab", "Next pane"},
 				{"Shift+Tab", "Previous pane"},
 			},

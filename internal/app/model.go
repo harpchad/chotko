@@ -9,6 +9,7 @@ import (
 	"github.com/harpchad/chotko/internal/components/alerts"
 	"github.com/harpchad/chotko/internal/components/command"
 	"github.com/harpchad/chotko/internal/components/detail"
+	"github.com/harpchad/chotko/internal/components/hosts"
 	"github.com/harpchad/chotko/internal/components/modal"
 	"github.com/harpchad/chotko/internal/components/statusbar"
 	"github.com/harpchad/chotko/internal/components/tabs"
@@ -22,8 +23,14 @@ type Pane int
 
 // Pane constants for UI focus management.
 const (
-	PaneAlerts Pane = iota
+	PaneList Pane = iota // PaneList is the left pane (alerts or hosts list)
 	PaneDetail
+)
+
+// Tab constants.
+const (
+	TabAlerts = 0
+	TabHosts  = 1
 )
 
 // Mode represents the current input mode.
@@ -65,12 +72,14 @@ type Model struct {
 
 	// Data
 	problems   []zabbix.Problem
+	hosts      []zabbix.Host
 	hostCounts *zabbix.HostCounts
 
 	// Components
 	statusBar    statusbar.Model
 	tabBar       tabs.Model
 	alertList    alerts.Model
+	hostList     hosts.Model
 	detailPane   detail.Model
 	commandInput command.Model
 
@@ -100,7 +109,7 @@ func New(cfg *config.Config, t *theme.Theme) *Model {
 		theme:           t,
 		styles:          styles,
 		keys:            DefaultKeyMap(),
-		focused:         PaneAlerts,
+		focused:         PaneList,
 		mode:            ModeNormal,
 		minSeverity:     cfg.Display.MinSeverity,
 		refreshInterval: time.Duration(cfg.Display.RefreshInterval) * time.Second,
@@ -112,9 +121,13 @@ func New(cfg *config.Config, t *theme.Theme) *Model {
 	m.statusBar = statusbar.New(styles)
 	m.tabBar = tabs.New(styles, []string{"Alerts", "Hosts", "Events", "Graphs"}, 0)
 	m.alertList = alerts.New(styles)
+	m.hostList = hosts.New(styles)
 	m.detailPane = detail.New(styles)
 	m.commandInput = command.New(styles)
 	m.errorModal = modal.New(styles)
+
+	// Set initial focus to alerts list
+	m.alertList.SetFocused(true)
 
 	return m
 }
@@ -222,6 +235,25 @@ func (m *Model) loadHostCounts() tea.Cmd {
 	}
 }
 
+// loadHosts fetches all hosts from Zabbix.
+func (m *Model) loadHosts() tea.Cmd {
+	// Capture values for the goroutine
+	client := m.client
+	ctx := m.ctx
+
+	return func() tea.Msg {
+		if client == nil {
+			return HostsLoadedMsg{Err: nil}
+		}
+
+		hosts, err := client.GetAllHosts(ctx)
+		return HostsLoadedMsg{
+			Hosts: hosts,
+			Err:   err,
+		}
+	}
+}
+
 // acknowledgeProblem sends an acknowledgment for the selected problem.
 func (m *Model) acknowledgeProblem(message string) tea.Cmd {
 	// Capture values for the goroutine
@@ -255,11 +287,12 @@ func (m *Model) SetSize(width, height int) {
 	commandHeight := 1
 	contentHeight := height - statusBarHeight - tabBarHeight - commandHeight - 4 // borders
 
-	// Split width: 60% alerts, 40% detail
-	alertWidth := (width - 3) * 60 / 100
-	detailWidth := width - alertWidth - 3
+	// Split width: 60% list, 40% detail
+	listWidth := (width - 3) * 60 / 100
+	detailWidth := width - listWidth - 3
 
-	m.alertList.SetSize(alertWidth, contentHeight)
+	m.alertList.SetSize(listWidth, contentHeight)
+	m.hostList.SetSize(listWidth, contentHeight)
 	m.detailPane.SetSize(detailWidth, contentHeight)
 	m.statusBar.SetWidth(width)
 	m.tabBar.SetWidth(width)
