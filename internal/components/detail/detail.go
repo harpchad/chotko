@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/NimbleMarkets/ntcharts/linechart"
 	tslc "github.com/NimbleMarkets/ntcharts/linechart/timeserieslinechart"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -583,7 +584,10 @@ func (m Model) viewGraph() string {
 				chartHeight = 15
 			}
 
-			chart := tslc.New(chartWidth, chartHeight, tslc.WithXLabelFormatter(tslc.HourTimeLabelFormatter()))
+			chart := tslc.New(chartWidth, chartHeight,
+				tslc.WithXLabelFormatter(tslc.HourTimeLabelFormatter()),
+				tslc.WithYLabelFormatter(humanReadableYLabelFormatter(item.Units)),
+			)
 
 			// Push history data points
 			for _, h := range m.history {
@@ -702,4 +706,62 @@ func calcStats(history []zabbix.History) (minVal, maxVal, avgVal float64) {
 
 	avgVal = sum / float64(len(history))
 	return minVal, maxVal, avgVal
+}
+
+// humanReadableYLabelFormatter returns a LabelFormatter that formats Y axis
+// values in human-readable form (e.g., 16G instead of 16000000000).
+func humanReadableYLabelFormatter(units string) linechart.LabelFormatter {
+	return func(_ int, v float64) string {
+		return formatYValue(v, units)
+	}
+}
+
+// formatYValue formats a value for the Y axis label with appropriate SI suffixes.
+func formatYValue(value float64, units string) string {
+	// Handle bytes specially - use binary prefixes (Ki, Mi, Gi)
+	if units == "B" || units == "Bps" {
+		return formatBytesShort(value)
+	}
+
+	// Handle percentages
+	if units == "%" {
+		return fmt.Sprintf("%.0f%%", value)
+	}
+
+	// For other values, use SI prefixes
+	absVal := value
+	if absVal < 0 {
+		absVal = -absVal
+	}
+
+	switch {
+	case absVal >= 1e12:
+		return fmt.Sprintf("%.1fT", value/1e12)
+	case absVal >= 1e9:
+		return fmt.Sprintf("%.1fG", value/1e9)
+	case absVal >= 1e6:
+		return fmt.Sprintf("%.1fM", value/1e6)
+	case absVal >= 1e3:
+		return fmt.Sprintf("%.1fK", value/1e3)
+	case absVal >= 1:
+		return fmt.Sprintf("%.0f", value)
+	case absVal >= 0.01:
+		return fmt.Sprintf("%.2f", value)
+	default:
+		return fmt.Sprintf("%.0f", value)
+	}
+}
+
+// formatBytesShort formats bytes to short human-readable form for axis labels.
+func formatBytesShort(bytes float64) string {
+	const unit = 1024
+	if bytes < unit {
+		return fmt.Sprintf("%.0f", bytes)
+	}
+	div, exp := float64(unit), 0
+	for n := bytes / unit; n >= unit && exp < 5; n /= unit {
+		div *= unit
+		exp++
+	}
+	return fmt.Sprintf("%.1f%c", bytes/div, "KMGTP"[exp])
 }
