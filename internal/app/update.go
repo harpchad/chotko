@@ -18,6 +18,12 @@ import (
 
 // Update handles all incoming messages and updates the model accordingly.
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	// Always handle refresh tick to keep timer running, regardless of modal state.
+	// This prevents the auto-refresh from stopping when modals are visible.
+	if _, ok := msg.(RefreshTickMsg); ok {
+		return m.handleRefreshTickMsg()
+	}
+
 	// Handle editor modal first if visible
 	if m.showEditor {
 		return m.handleEditorUpdate(msg)
@@ -66,8 +72,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.handleHostCountsLoadedMsg(msg)
 	case AcknowledgeResultMsg:
 		return m.handleAcknowledgeResultMsg(msg)
-	case RefreshTickMsg:
-		return m.handleRefreshTickMsg()
 	case ErrorMsg:
 		m.showError = true
 		m.errorModal.ShowError(msg.Title, msg.Message, msg.Err)
