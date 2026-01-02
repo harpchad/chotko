@@ -59,17 +59,16 @@ func TestNewStyles_WithAllBuiltinThemes(t *testing.T) {
 func TestTheme_Fields(t *testing.T) {
 	t.Parallel()
 
-	theme := &Theme{
+	th := &Theme{
 		Name:        "test",
 		Description: "Test description",
-		Colors:      DefaultTheme().Colors,
 	}
 
-	if theme.Name != "test" {
-		t.Errorf("Theme.Name = %q, want %q", theme.Name, "test")
+	if th.Name != "test" {
+		t.Errorf("Theme.Name = %q, want %q", th.Name, "test")
 	}
-	if theme.Description != "Test description" {
-		t.Errorf("Theme.Description = %q, want %q", theme.Description, "Test description")
+	if th.Description != "Test description" {
+		t.Errorf("Theme.Description = %q, want %q", th.Description, "Test description")
 	}
 }
 

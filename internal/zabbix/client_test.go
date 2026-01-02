@@ -243,7 +243,7 @@ func TestClient_ContextCancellation(t *testing.T) {
 
 	_, err := client.Version(ctx)
 	if err == nil {
-		t.Error("Version() expected error for cancelled context")
+		t.Error("Version() expected error for canceled context")
 	}
 }
 

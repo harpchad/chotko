@@ -88,11 +88,11 @@ func TestSave(t *testing.T) {
 		Created:     time.Now(),
 	}
 
-	if err := list.Add(rule); err != nil {
+	if err = list.Add(rule); err != nil {
 		t.Fatalf("Add() error = %v", err)
 	}
 
-	if err := list.Save(); err != nil {
+	if err = list.Save(); err != nil {
 		t.Fatalf("Save() error = %v", err)
 	}
 
@@ -255,7 +255,7 @@ func TestRules_ReturnsCopy(t *testing.T) {
 
 // contains checks if s contains substr.
 func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(s) > 0 && containsHelper(s, substr))
+	return len(s) >= len(substr) && (s == substr || s != "" && containsHelper(s, substr))
 }
 
 func containsHelper(s, substr string) bool {

@@ -45,7 +45,7 @@ type CustomColorConfig struct {
 
 // Load attempts to load a theme by name.
 // It first checks built-in themes, then looks for custom theme files.
-func Load(name string, configDir string) (*Theme, error) {
+func Load(name, configDir string) (*Theme, error) {
 	// Check built-in themes first
 	if theme, ok := BuiltinThemes()[name]; ok {
 		return theme, nil
@@ -114,7 +114,7 @@ func colorOrDefault(hex string, def lipgloss.TerminalColor) lipgloss.TerminalCol
 // SaveThemeTemplate saves a template theme file for user customization.
 func SaveThemeTemplate(dir string) error {
 	themesDir := filepath.Join(dir, "themes")
-	if err := os.MkdirAll(themesDir, 0o755); err != nil {
+	if err := os.MkdirAll(themesDir, 0o750); err != nil {
 		return fmt.Errorf("failed to create themes directory: %w", err)
 	}
 
@@ -152,7 +152,7 @@ colors:
 `
 
 	templatePath := filepath.Join(themesDir, "custom.yaml.example")
-	if err := os.WriteFile(templatePath, []byte(template), 0o644); err != nil {
+	if err := os.WriteFile(templatePath, []byte(template), 0o600); err != nil {
 		return fmt.Errorf("failed to write theme template: %w", err)
 	}
 

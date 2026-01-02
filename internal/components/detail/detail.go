@@ -190,16 +190,14 @@ func (m Model) viewProblem() string {
 		// Trigger/Problem name
 		lines = append(lines, m.renderField("Trigger", p.Name))
 
-		// Severity
+		// Severity, Duration, Start time
 		sevName := theme.SeverityName(p.SeverityInt())
 		sevStyle := m.styles.AlertSeverity[p.SeverityInt()]
-		lines = append(lines, m.renderFieldStyled("Severity", sevName, sevStyle))
-
-		// Duration
-		lines = append(lines, m.renderField("Duration", p.DurationString()))
-
-		// Start time
-		lines = append(lines, m.renderField("Started", p.StartTime().Format("2006-01-02 15:04:05")))
+		lines = append(lines,
+			m.renderFieldStyled("Severity", sevName, sevStyle),
+			m.renderField("Duration", p.DurationString()),
+			m.renderField("Started", p.StartTime().Format("2006-01-02 15:04:05")),
+		)
 
 		// Acknowledged
 		if p.IsAcknowledged() {
@@ -218,8 +216,7 @@ func (m Model) viewProblem() string {
 
 		// Tags
 		if len(p.Tags) > 0 {
-			lines = append(lines, "")
-			lines = append(lines, m.styles.DetailLabel.Render("Tags:"))
+			lines = append(lines, "", m.styles.DetailLabel.Render("Tags:"))
 			for _, tag := range p.Tags {
 				tagStr := tag.Tag
 				if tag.Value != "" {
@@ -231,8 +228,7 @@ func (m Model) viewProblem() string {
 
 		// Acknowledgments
 		if len(p.Acknowledges) > 0 {
-			lines = append(lines, "")
-			lines = append(lines, m.styles.DetailLabel.Render("History:"))
+			lines = append(lines, "", m.styles.DetailLabel.Render("History:"))
 			for _, ack := range p.Acknowledges {
 				user := ack.Username
 				if user == "" {
@@ -247,9 +243,11 @@ func (m Model) viewProblem() string {
 		}
 
 		// Actions hint
-		lines = append(lines, "")
-		lines = append(lines, strings.Repeat("─", max(0, m.width-4)))
-		lines = append(lines, m.styles.Subtle.Render("[a]ck [A]ck+msg [t]riggers [m]acros [r]efresh"))
+		lines = append(lines,
+			"",
+			strings.Repeat("─", max(0, m.width-4)),
+			m.styles.Subtle.Render("[a]ck [A]ck+msg [t]riggers [m]acros [r]efresh"),
+		)
 
 		b.WriteString(m.renderLines(lines))
 	}
@@ -298,15 +296,18 @@ func (m Model) viewEvent() string {
 		// Severity
 		sevName := theme.SeverityName(e.SeverityInt())
 		sevStyle := m.styles.AlertSeverity[e.SeverityInt()]
-		lines = append(lines, m.renderFieldStyled("Severity", sevName, sevStyle))
-
 		// Time
-		lines = append(lines, m.renderField("Time", e.StartTime().Format("2006-01-02 15:04:05")))
+		lines = append(lines,
+			m.renderFieldStyled("Severity", sevName, sevStyle),
+			m.renderField("Time", e.StartTime().Format("2006-01-02 15:04:05")),
+		)
 
 		// Duration / Resolved info
 		if e.IsRecovery() {
-			lines = append(lines, m.renderField("Resolved", e.RecoveryTime().Format("2006-01-02 15:04:05")))
-			lines = append(lines, m.renderField("Duration", e.ResolvedDurationString()))
+			lines = append(lines,
+				m.renderField("Resolved", e.RecoveryTime().Format("2006-01-02 15:04:05")),
+				m.renderField("Duration", e.ResolvedDurationString()),
+			)
 		} else {
 			lines = append(lines, m.renderField("Duration", e.DurationString()))
 		}
@@ -328,8 +329,7 @@ func (m Model) viewEvent() string {
 
 		// Tags
 		if len(e.Tags) > 0 {
-			lines = append(lines, "")
-			lines = append(lines, m.styles.DetailLabel.Render("Tags:"))
+			lines = append(lines, "", m.styles.DetailLabel.Render("Tags:"))
 			for _, tag := range e.Tags {
 				tagStr := tag.Tag
 				if tag.Value != "" {
@@ -341,8 +341,7 @@ func (m Model) viewEvent() string {
 
 		// Acknowledgments
 		if len(e.Acknowledges) > 0 {
-			lines = append(lines, "")
-			lines = append(lines, m.styles.DetailLabel.Render("History:"))
+			lines = append(lines, "", m.styles.DetailLabel.Render("History:"))
 			for _, ack := range e.Acknowledges {
 				user := ack.Username
 				if user == "" {
@@ -357,9 +356,11 @@ func (m Model) viewEvent() string {
 		}
 
 		// Actions hint
-		lines = append(lines, "")
-		lines = append(lines, strings.Repeat("─", max(0, m.width-4)))
-		lines = append(lines, m.styles.Subtle.Render("[t]riggers [m]acros [r]efresh"))
+		lines = append(lines,
+			"",
+			strings.Repeat("─", max(0, m.width-4)),
+			m.styles.Subtle.Render("[t]riggers [m]acros [r]efresh"),
+		)
 
 		b.WriteString(m.renderLines(lines))
 	}
@@ -421,8 +422,7 @@ func (m Model) viewHost() string {
 
 		// Interfaces
 		if len(h.Interfaces) > 0 {
-			lines = append(lines, "")
-			lines = append(lines, m.styles.DetailLabel.Render("Interfaces:"))
+			lines = append(lines, "", m.styles.DetailLabel.Render("Interfaces:"))
 			for _, iface := range h.Interfaces {
 				ifaceType := m.interfaceTypeName(iface.Type)
 				addr := iface.IP
@@ -438,7 +438,7 @@ func (m Model) viewHost() string {
 					mainStr = " (default)"
 				}
 
-				availStr := ""
+				var availStr string
 				switch iface.Available {
 				case "1":
 					availStr = m.styles.StatusOK.Render(" [OK]")
@@ -455,17 +455,18 @@ func (m Model) viewHost() string {
 
 		// Host groups
 		if len(h.Groups) > 0 {
-			lines = append(lines, "")
-			lines = append(lines, m.styles.DetailLabel.Render("Groups:"))
+			lines = append(lines, "", m.styles.DetailLabel.Render("Groups:"))
 			for _, group := range h.Groups {
 				lines = append(lines, "  "+m.styles.DetailTag.Render(group.Name))
 			}
 		}
 
 		// Actions hint
-		lines = append(lines, "")
-		lines = append(lines, strings.Repeat("─", max(0, m.width-4)))
-		lines = append(lines, m.styles.Subtle.Render("[t]riggers [m]acros [e]nable/disable [r]efresh"))
+		lines = append(lines,
+			"",
+			strings.Repeat("─", max(0, m.width-4)),
+			m.styles.Subtle.Render("[t]riggers [m]acros [e]nable/disable [r]efresh"),
+		)
 
 		b.WriteString(m.renderLines(lines))
 	}
@@ -552,14 +553,12 @@ func (m Model) viewGraph() string {
 		// Build detail lines
 		lines := []string{}
 
-		// Item name
-		lines = append(lines, m.renderField("Item", item.Name))
-
-		// Host
-		lines = append(lines, m.renderField("Host", item.HostName()))
-
-		// Key
-		lines = append(lines, m.renderField("Key", item.Key))
+		// Item name, Host, and Key
+		lines = append(lines,
+			m.renderField("Item", item.Name),
+			m.renderField("Host", item.HostName()),
+			m.renderField("Key", item.Key),
+		)
 
 		// Current value
 		value := format.Value(item.LastValueFloat(), item.Units)
@@ -580,9 +579,7 @@ func (m Model) viewGraph() string {
 
 		// Chart section
 		if len(m.history) > 0 {
-			lines = append(lines, "")
-			lines = append(lines, m.styles.DetailLabel.Render("History Chart:"))
-			lines = append(lines, "")
+			lines = append(lines, "", m.styles.DetailLabel.Render("History Chart:"), "")
 
 			// Create time series chart
 			chartWidth := m.width - 8
@@ -622,14 +619,12 @@ func (m Model) viewGraph() string {
 				lines = append(lines, m.styles.Subtle.Render(timeRange))
 			}
 		} else {
-			lines = append(lines, "")
-			lines = append(lines, m.styles.Subtle.Render("  No history data available"))
+			lines = append(lines, "", m.styles.Subtle.Render("  No history data available"))
 		}
 
 		// Stats section
 		if len(m.history) > 0 {
-			lines = append(lines, "")
-			lines = append(lines, strings.Repeat("─", max(0, m.width-4)))
+			lines = append(lines, "", strings.Repeat("─", max(0, m.width-4)))
 
 			// Calculate stats
 			minVal, maxVal, avgVal := calcStats(m.history)

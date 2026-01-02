@@ -75,7 +75,7 @@ func (m Model) Update(_ tea.Msg) (Model, tea.Cmd) {
 
 // View implements tea.Model.
 func (m Model) View() string {
-	var tabs []string
+	tabs := make([]string, 0, len(m.tabs))
 
 	for i, t := range m.tabs {
 		var tab string

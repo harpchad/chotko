@@ -61,7 +61,7 @@ func (l *List) Save() error {
 
 	// Ensure directory exists
 	dir := filepath.Dir(l.path)
-	if err := os.MkdirAll(dir, 0o755); err != nil {
+	if err := os.MkdirAll(dir, 0o750); err != nil {
 		return fmt.Errorf("failed to create config directory: %w", err)
 	}
 

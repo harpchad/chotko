@@ -2,6 +2,8 @@ package app
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -299,9 +301,9 @@ func (m *Model) loadHosts() tea.Cmd {
 			return HostsLoadedMsg{Err: nil}
 		}
 
-		hosts, err := client.GetAllHosts(ctx)
+		fetchedHosts, err := client.GetAllHosts(ctx)
 		return HostsLoadedMsg{
-			Hosts: hosts,
+			Hosts: fetchedHosts,
 			Err:   err,
 		}
 	}
@@ -319,9 +321,9 @@ func (m *Model) loadEvents() tea.Cmd {
 		}
 
 		// Get events from the last 24 hours, limit to 500
-		events, err := client.GetRecentEvents(ctx, 24, 500)
+		fetchedEvents, err := client.GetRecentEvents(ctx, 24, 500)
 		return EventsLoadedMsg{
-			Events: events,
+			Events: fetchedEvents,
 			Err:    err,
 		}
 	}
@@ -579,9 +581,9 @@ func (m *Model) SetSize(width, height int) {
 
 // Shutdown performs cleanup.
 func (m *Model) Shutdown() {
-	// Logout before cancelling context so the request can complete
+	// Logout before canceling context so the request can complete
 	if m.client != nil {
-		// Use a short timeout context for logout, not the cancelled one
+		// Use a short timeout context for logout, not the canceled one
 		ctx, cancel := context.WithTimeout(context.Background(), LogoutTimeout*time.Second)
 		defer cancel()
 		_ = m.client.Logout(ctx)
@@ -661,4 +663,92 @@ func (m *Model) findHostByID(hostID string) *zabbix.Host {
 	}
 
 	return nil
+}
+
+// Severity emoji and text mappings for window title.
+var (
+	severityEmoji = map[int]string{
+		5: "💥",  // Disaster
+		4: "🔥",  // High
+		3: "🚨",  // Average
+		2: "⚠️", // Warning
+		1: "ⓘ",  // Information
+	}
+	severityText = map[int]string{
+		5: "D", // Disaster
+		4: "H", // High
+		3: "A", // Average
+		2: "W", // Warning
+		1: "I", // Information
+	}
+)
+
+// getAlertCountsBySeverity returns a map of severity level to alert count.
+// Only counts problems that are not ignored.
+func (m *Model) getAlertCountsBySeverity() map[int]int {
+	counts := make(map[int]int)
+	for _, p := range m.problems {
+		// Skip ignored alerts
+		if m.ignoreList != nil {
+			hostID := ""
+			triggerID := ""
+			if len(p.Hosts) > 0 {
+				hostID = p.Hosts[0].HostID
+			}
+			if p.Object == ObjectTypeTrigger {
+				triggerID = p.ObjectID
+			}
+			if triggerID == "" && p.RelatedObject.TriggerID != "" {
+				triggerID = p.RelatedObject.TriggerID
+			}
+			if hostID != "" && triggerID != "" && m.ignoreList.IsIgnored(hostID, triggerID) {
+				continue
+			}
+		}
+		counts[p.SeverityInt()]++
+	}
+	return counts
+}
+
+// windowTitle generates the window/tab title string based on current alert state.
+func (m *Model) windowTitle() string {
+	if !m.connected {
+		return "chotko: disconnected"
+	}
+
+	counts := m.getAlertCountsBySeverity()
+	minSev := m.config.GetTitleMinSeverity()
+	useEmoji := m.config.GetEmojiTitle()
+
+	var parts []string
+	for sev := 5; sev >= 1; sev-- { // highest to lowest
+		if sev < minSev || counts[sev] == 0 {
+			continue
+		}
+		if useEmoji {
+			parts = append(parts, severityEmoji[sev]+fmt.Sprintf("%d", counts[sev]))
+		} else {
+			parts = append(parts, fmt.Sprintf("%s:%d", severityText[sev], counts[sev]))
+		}
+	}
+
+	if len(parts) == 0 {
+		if useEmoji {
+			return "chotko: ✅"
+		}
+		return "chotko: OK"
+	}
+
+	if useEmoji {
+		return "chotko: " + strings.Join(parts, " ")
+	}
+	return "chotko: [" + strings.Join(parts, " ") + "]"
+}
+
+// updateWindowTitle returns a command to update the window title, or nil if disabled.
+func (m *Model) updateWindowTitle() tea.Cmd {
+	if !m.config.GetWindowTitle() {
+		return nil
+	}
+	return tea.SetWindowTitle(m.windowTitle())
 }

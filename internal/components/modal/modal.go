@@ -235,9 +235,9 @@ func (m Model) renderHelp() string {
 		b.WriteString("\n")
 
 		for _, kv := range section.keys {
-			key := m.styles.HelpKey.Width(14).Render(kv[0])
+			keyText := m.styles.HelpKey.Width(14).Render(kv[0])
 			desc := m.styles.HelpDesc.Render(kv[1])
-			b.WriteString("  " + key + " " + desc + "\n")
+			b.WriteString("  " + keyText + " " + desc + "\n")
 		}
 	}
 

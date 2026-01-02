@@ -68,7 +68,7 @@ func WithInsecureSkipVerify() ClientOption {
 	return func(c *Client) {
 		if transport, ok := c.httpClient.Transport.(*http.Transport); ok {
 			if transport.TLSClientConfig == nil {
-				transport.TLSClientConfig = &tls.Config{}
+				transport.TLSClientConfig = &tls.Config{MinVersion: tls.VersionTLS12}
 			}
 			transport.TLSClientConfig.InsecureSkipVerify = true
 		}
@@ -82,7 +82,7 @@ func NewClient(baseURL string, opts ...ClientOption) *Client {
 		httpClient: &http.Client{
 			Timeout: 30 * time.Second,
 			Transport: &http.Transport{
-				TLSClientConfig: &tls.Config{},
+				TLSClientConfig: &tls.Config{MinVersion: tls.VersionTLS12},
 			},
 		},
 	}
@@ -114,17 +114,17 @@ func (c *Client) nextID() int64 {
 }
 
 // call makes a JSON-RPC call to the Zabbix API.
-func (c *Client) call(ctx context.Context, method string, params interface{}, result interface{}) error {
+func (c *Client) call(ctx context.Context, method string, params, result interface{}) error {
 	return c.callWithAuth(ctx, method, params, result, true)
 }
 
 // callNoAuth makes a JSON-RPC call without authentication (for apiinfo.version, etc.)
-func (c *Client) callNoAuth(ctx context.Context, method string, params interface{}, result interface{}) error {
+func (c *Client) callNoAuth(ctx context.Context, method string, params, result interface{}) error {
 	return c.callWithAuth(ctx, method, params, result, false)
 }
 
 // callWithAuth makes a JSON-RPC call to the Zabbix API with optional authentication.
-func (c *Client) callWithAuth(ctx context.Context, method string, params interface{}, result interface{}, useAuth bool) error {
+func (c *Client) callWithAuth(ctx context.Context, method string, params, result interface{}, useAuth bool) error {
 	req := Request{
 		JSONRPC: "2.0",
 		Method:  method,
@@ -137,7 +137,7 @@ func (c *Client) callWithAuth(ctx context.Context, method string, params interfa
 		return fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	httpReq, err := http.NewRequestWithContext(ctx, "POST", c.baseURL, bytes.NewReader(body))
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL, bytes.NewReader(body))
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
 	}

@@ -74,7 +74,10 @@ func TestRefreshTickMsg_AlwaysHandled(t *testing.T) {
 			newModel, cmd := m.Update(msg)
 
 			// Verify the model was updated (loading state should be set)
-			updatedModel := newModel.(Model)
+			updatedModel, ok := newModel.(Model)
+			if !ok {
+				t.Fatalf("expected Model type, got %T", newModel)
+			}
 
 			// The command should not be nil - it should contain the next tick
 			if cmd == nil {
@@ -101,7 +104,10 @@ func TestRefreshTickMsg_NotConnected(t *testing.T) {
 	msg := RefreshTickMsg{}
 	newModel, cmd := m.Update(msg)
 
-	updatedModel := newModel.(Model)
+	updatedModel, ok := newModel.(Model)
+	if !ok {
+		t.Fatalf("expected Model type, got %T", newModel)
+	}
 
 	// Command should still be returned (to keep the timer running)
 	if cmd == nil {

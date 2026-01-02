@@ -57,9 +57,9 @@ func RunWizard() (*Config, error) {
 		fmt.Println("  3. Create a new token")
 		fmt.Println()
 		fmt.Print("API Token: ")
-		token, err := reader.ReadString('\n')
-		if err != nil {
-			return nil, fmt.Errorf("failed to read API token: %w", err)
+		token, readErr := reader.ReadString('\n')
+		if readErr != nil {
+			return nil, fmt.Errorf("failed to read API token: %w", readErr)
 		}
 		token = strings.TrimSpace(token)
 		if token == "" {
@@ -69,9 +69,9 @@ func RunWizard() (*Config, error) {
 	} else {
 		fmt.Println()
 		fmt.Print("Username: ")
-		username, err := reader.ReadString('\n')
-		if err != nil {
-			return nil, fmt.Errorf("failed to read username: %w", err)
+		username, readErr := reader.ReadString('\n')
+		if readErr != nil {
+			return nil, fmt.Errorf("failed to read username: %w", readErr)
 		}
 		username = strings.TrimSpace(username)
 		if username == "" {
@@ -80,9 +80,9 @@ func RunWizard() (*Config, error) {
 		cfg.Auth.Username = username
 
 		fmt.Print("Password: ")
-		password, err := reader.ReadString('\n')
-		if err != nil {
-			return nil, fmt.Errorf("failed to read password: %w", err)
+		password, readErr := reader.ReadString('\n')
+		if readErr != nil {
+			return nil, fmt.Errorf("failed to read password: %w", readErr)
 		}
 		password = strings.TrimSpace(password)
 		if password == "" {

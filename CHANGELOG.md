@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Dynamic window/tab title showing alert counts by severity (💥 Disaster, 🔥 High, 🚨 Average, ⚠️ Warning, ⓘ Info)
+- New config options: `window_title`, `emoji_title`, `title_min_severity`
+- Text fallback mode for terminals that don't support emoji in titles
+
+## [0.4.2] - 2025-01-02
+
+### Added
+
+- Makefile with standard Go targets (`build`, `test`, `lint`, `fmt`, `clean`, `update`)
+
+### Changed
+
+- Updated `.golangci.yml` to v2 format with comprehensive linter coverage
+- Improved code style compliance with stricter linting rules
+- More restrictive file permissions (0600 for files, 0750 for directories)
+- Require TLS 1.2 minimum for Zabbix API connections
+
+### Fixed
+
+- Type assertion safety checks in tests
+- Variable shadowing issues across multiple packages
+- US English spelling consistency (canceled, canceling)
+- Switch statement exhaustiveness
+- String comparison idioms (`s == ""` instead of `len(s) == 0`)
+
 ## [0.4.1] - 2024-12-23
 
 ### Fixed
@@ -68,7 +95,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Zabbix API client
 - Basic theme support
 
-[Unreleased]: https://github.com/harpchad/chotko/compare/v0.4.1...HEAD
+[Unreleased]: https://github.com/harpchad/chotko/compare/v0.4.2...HEAD
+[0.4.2]: https://github.com/harpchad/chotko/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/harpchad/chotko/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/harpchad/chotko/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/harpchad/chotko/compare/v0.1.0-alpha.1...v0.3.0

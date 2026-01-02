@@ -577,10 +577,10 @@ func TestModel_View_FocusedVsBlurred(t *testing.T) {
 
 	// Views should both render (we can't easily compare lipgloss styles)
 	// Just verify both render without error
-	if len(focusedView) == 0 {
+	if focusedView == "" {
 		t.Error("Focused view should not be empty")
 	}
-	if len(blurredView) == 0 {
+	if blurredView == "" {
 		t.Error("Blurred view should not be empty")
 	}
 }
