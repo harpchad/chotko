@@ -101,7 +101,7 @@ func (m Model) handleConnectedMsg(msg ConnectedMsg) (tea.Model, tea.Cmd) {
 	m.version = msg.Version
 	m.client = msg.Client
 	m.statusBar.SetConnected(true, msg.Version)
-	return m, tea.Batch(m.loadProblems(), m.loadHostCounts())
+	return m, tea.Batch(m.loadProblems(), m.loadHostCounts(), m.updateWindowTitle())
 }
 
 // handleDisconnectedMsg handles disconnection from Zabbix.
@@ -112,7 +112,7 @@ func (m Model) handleDisconnectedMsg(msg DisconnectedMsg) (tea.Model, tea.Cmd) {
 		m.showError = true
 		m.errorModal.ShowError("Connection Lost", "Lost connection to Zabbix server", msg.Err)
 	}
-	return m, nil
+	return m, m.updateWindowTitle()
 }
 
 // handleProblemsLoadedMsg handles loaded problems data.
@@ -136,7 +136,7 @@ func (m Model) handleProblemsLoadedMsg(msg ProblemsLoadedMsg) (tea.Model, tea.Cm
 			m.detailPane.SetProblem(selected)
 		}
 	}
-	return m, nil
+	return m, m.updateWindowTitle()
 }
 
 // handleHostsLoadedMsg handles loaded hosts data.
@@ -673,7 +673,7 @@ func (m Model) handleIgnoreConfirm(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 	case "n", "N", "esc":
 		// Cancel
-		m.statusBar.SetStatus("Cancelled")
+		m.statusBar.SetStatus("Canceled")
 		m.pendingIgnore = nil
 		m.awaitingIgnoreConfirm = false
 		return m, nil
@@ -873,6 +873,8 @@ func (m Model) handleCommandInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			}
 		case command.ModeCommand:
 			return m.executeCommand(value)
+		default:
+			// Other modes don't need special handling
 		}
 		return m, nil
 	}
@@ -985,6 +987,8 @@ func (m Model) handleMouseMsg(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 		return m.handleScroll(-scrollSpeed, msg.X, msg.Y)
 	case tea.MouseButtonWheelDown:
 		return m.handleScroll(scrollSpeed, msg.X, msg.Y)
+	default:
+		// Other mouse buttons handled below or ignored
 	}
 
 	// Handle left click release (not press, to avoid double-firing)
@@ -996,7 +1000,7 @@ func (m Model) handleMouseMsg(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 }
 
 // handleScroll handles scroll wheel events, scrolling the pane under the mouse.
-func (m Model) handleScroll(delta int, mouseX, mouseY int) (tea.Model, tea.Cmd) {
+func (m Model) handleScroll(delta, mouseX, mouseY int) (tea.Model, tea.Cmd) {
 	// Check if mouse is in content area (not in status bar, tab bar, or command bar)
 	if mouseY < m.contentY || mouseY >= m.contentY+m.contentHeight {
 		return m, nil

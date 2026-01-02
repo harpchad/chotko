@@ -47,7 +47,7 @@ func TestLoad_CustomTheme(t *testing.T) {
 	// Create temp directory for test
 	tmpDir := t.TempDir()
 	themesDir := filepath.Join(tmpDir, "themes")
-	if err := os.MkdirAll(themesDir, 0o755); err != nil {
+	if err := os.MkdirAll(themesDir, 0o750); err != nil {
 		t.Fatalf("Failed to create themes dir: %v", err)
 	}
 
@@ -61,7 +61,7 @@ colors:
   primary: "#0000FF"
 `
 	themePath := filepath.Join(themesDir, "mycustom.yaml")
-	if err := os.WriteFile(themePath, []byte(customTheme), 0o644); err != nil {
+	if err := os.WriteFile(themePath, []byte(customTheme), 0o600); err != nil {
 		t.Fatalf("Failed to write custom theme: %v", err)
 	}
 
@@ -117,7 +117,7 @@ colors:
   highlight: "#333366"
   surface: "#2a2a2a"
 `
-	if err := os.WriteFile(themePath, []byte(content), 0o644); err != nil {
+	if err := os.WriteFile(themePath, []byte(content), 0o600); err != nil {
 		t.Fatalf("Failed to write test theme: %v", err)
 	}
 
@@ -154,7 +154,7 @@ func TestLoadFromFile_InvalidYAML(t *testing.T) {
 	tmpDir := t.TempDir()
 	themePath := filepath.Join(tmpDir, "invalid.yaml")
 
-	if err := os.WriteFile(themePath, []byte("invalid: yaml: content: ["), 0o644); err != nil {
+	if err := os.WriteFile(themePath, []byte("invalid: yaml: content: ["), 0o600); err != nil {
 		t.Fatalf("Failed to write invalid yaml: %v", err)
 	}
 
@@ -180,7 +180,7 @@ colors:
   disaster: "#AA0000"
   ok: "#00AA00"
 `
-	if err := os.WriteFile(themePath, []byte(content), 0o644); err != nil {
+	if err := os.WriteFile(themePath, []byte(content), 0o600); err != nil {
 		t.Fatalf("Failed to write partial theme: %v", err)
 	}
 
@@ -221,7 +221,7 @@ func TestSaveThemeTemplate(t *testing.T) {
 
 	// Check that the template file was created
 	templatePath := filepath.Join(tmpDir, "themes", "custom.yaml.example")
-	if _, err := os.Stat(templatePath); os.IsNotExist(err) {
+	if _, statErr := os.Stat(templatePath); os.IsNotExist(statErr) {
 		t.Error("Template file was not created")
 	}
 
@@ -290,7 +290,7 @@ func TestSaveThemeTemplate_InvalidDir(t *testing.T) {
 	// Use a path that can't be created (file exists where dir needed)
 	tmpDir := t.TempDir()
 	blockingFile := filepath.Join(tmpDir, "themes")
-	if err := os.WriteFile(blockingFile, []byte("blocking"), 0o644); err != nil {
+	if err := os.WriteFile(blockingFile, []byte("blocking"), 0o600); err != nil {
 		t.Fatalf("Failed to create blocking file: %v", err)
 	}
 

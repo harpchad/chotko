@@ -566,7 +566,7 @@ func createTestItems() []zabbix.Item {
 
 // Helper to check if string contains substring
 func containsString(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(s) > 0 && containsStringHelper(s, substr))
+	return len(s) >= len(substr) && (s == substr || s != "" && containsStringHelper(s, substr))
 }
 
 func containsStringHelper(s, substr string) bool {

@@ -1,22 +1,99 @@
+# golangci-lint v2 configuration
+# Requires golangci-lint v2.0.0+
+
 version: "2"
 
 run:
   timeout: 5m
+  modules-download-mode: readonly
+
+formatters:
+  enable:
+    - gofumpt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/harpchad/chotko
 
 linters:
+  default: standard # Includes: errcheck, gosimple, govet, ineffassign, staticcheck, unused
+
   enable:
-    - errcheck
-    - govet
-    - ineffassign
-    - staticcheck
-    - unused
-    - misspell
-    - unconvert
-    - unparam
-    - gocritic
-    - revive
+    # Code quality
+    - bodyclose       # HTTP response body must be closed
+    - copyloopvar     # Detects loop variable issues (Go 1.22+)
+    - durationcheck   # Checks for two durations multiplied
+    - errname         # Error naming conventions
+    - errorlint       # Error wrapping issues
+    - exhaustive      # Enum switch completeness
+    - gocritic        # Extensive code analysis
+    - gosec           # Security issues
+    - makezero        # Slice initialization issues
+    - misspell        # Spelling mistakes
+    - nilerr          # Returns nil with non-nil error
+    - noctx           # HTTP requests without context
+    - nolintlint      # Validates nolint directives
+    - prealloc        # Slice preallocation suggestions
+    - predeclared     # Shadowing predeclared identifiers
+    - reassign        # Reassigning package variables
+    - revive          # Fast, configurable linter
+    - rowserrcheck    # Checks sql.Rows.Err
+    - sloglint        # slog usage
+    - sqlclosecheck   # SQL rows/statements closed
+    - unconvert       # Unnecessary type conversions
+    - unparam         # Unused function parameters
+    - usestdlibvars   # Use stdlib constants
+    - wastedassign    # Wasted assignments
+
   settings:
+    errcheck:
+      check-type-assertions: true
+      check-blank: false
+      exclude-functions:
+        - io.Copy
+        - (io.Closer).Close
+
+    errorlint:
+      errorf: true
+      errorf-multi: true
+      asserts: true
+      comparison: true
+
+    exhaustive:
+      default-signifies-exhaustive: true
+
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - style
+        - performance
+      disabled-checks:
+        - hugeParam
+        - rangeValCopy
+        - commentedOutCode
+        - evalOrder # BubbleTea idiom: return m, m.someCmd()
+
+    gosec:
+      excludes:
+        - G104 # Audit errors - errcheck handles this
+        - G201 # SQL string formatting - often safe with trusted input
+        - G304 # File path from variable - often intentional
+
+    govet:
+      enable-all: true
+      disable:
+        - fieldalignment
+
+    misspell:
+      locale: US
+
+    nolintlint:
+      require-explanation: true
+      require-specific: true
+
     revive:
+      severity: warning
       rules:
         - name: blank-imports
         - name: context-as-argument
@@ -27,25 +104,18 @@ linters:
         - name: error-naming
         - name: exported
         - name: increment-decrement
-        - name: var-naming
+        - name: indent-error-flow
         - name: package-comments
         - name: range
         - name: receiver-naming
         - name: time-naming
         - name: unexported-return
-        - name: indent-error-flow
-        - name: errorf
-        - name: empty-block
-        - name: superfluous-else
-        - name: unused-parameter
-        - name: unreachable-code
-        - name: redefines-builtin-id
+        - name: var-declaration
+        - name: var-naming
 
-formatters:
-  enable:
-    - gofumpt
-    - goimports
-  settings:
-    goimports:
-      local-prefixes:
-        - github.com/harpchad/chotko
+    unparam:
+      check-exported: false
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0

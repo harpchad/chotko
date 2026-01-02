@@ -219,7 +219,7 @@ func TestExists(t *testing.T) {
 
 		// Create the config file
 		configDir := filepath.Join(dir, "chotko")
-		if err := os.MkdirAll(configDir, 0o755); err != nil {
+		if err := os.MkdirAll(configDir, 0o750); err != nil {
 			t.Fatalf("failed to create config dir: %v", err)
 		}
 		configPath := filepath.Join(configDir, "config.yaml")
@@ -434,8 +434,8 @@ func TestConfig_UseToken(t *testing.T) {
 
 // contains is a helper to check if a string contains a substring.
 func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(substr) == 0 ||
-		(len(s) > 0 && len(substr) > 0 && findSubstring(s, substr)))
+	return len(s) >= len(substr) && (s == substr || substr == "" ||
+		(s != "" && substr != "" && findSubstring(s, substr)))
 }
 
 func findSubstring(s, substr string) bool {

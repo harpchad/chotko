@@ -32,9 +32,12 @@ type AuthConfig struct {
 
 // DisplayConfig holds display/UI settings.
 type DisplayConfig struct {
-	RefreshInterval int    `yaml:"refresh_interval"`
-	MinSeverity     int    `yaml:"min_severity"`
-	Theme           string `yaml:"theme"`
+	RefreshInterval  int    `yaml:"refresh_interval"`
+	MinSeverity      int    `yaml:"min_severity"`
+	Theme            string `yaml:"theme"`
+	WindowTitle      *bool  `yaml:"window_title,omitempty"`       // Enable window/tab title updates (default: true)
+	EmojiTitle       *bool  `yaml:"emoji_title,omitempty"`        // Use emoji in title (default: true), false for text
+	TitleMinSeverity int    `yaml:"title_min_severity,omitempty"` // Minimum severity to show in title (0-5)
 }
 
 // GraphsConfig holds settings for the graphs tab.
@@ -143,7 +146,7 @@ func Save(cfg *Config) error {
 // SaveToFile writes the configuration to a specific file path.
 func SaveToFile(cfg *Config, path string) error {
 	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, 0o755); err != nil {
+	if err := os.MkdirAll(dir, 0o750); err != nil {
 		return fmt.Errorf("failed to create config directory: %w", err)
 	}
 
@@ -213,4 +216,25 @@ func (c *Config) GetHistoryHours() int {
 		return 3 // default 3 hours
 	}
 	return c.Graphs.HistoryHours
+}
+
+// GetWindowTitle returns whether window title updates are enabled (default: true).
+func (c *Config) GetWindowTitle() bool {
+	if c.Display.WindowTitle == nil {
+		return true
+	}
+	return *c.Display.WindowTitle
+}
+
+// GetEmojiTitle returns whether to use emoji in title (default: true).
+func (c *Config) GetEmojiTitle() bool {
+	if c.Display.EmojiTitle == nil {
+		return true
+	}
+	return *c.Display.EmojiTitle
+}
+
+// GetTitleMinSeverity returns the minimum severity to show in window title.
+func (c *Config) GetTitleMinSeverity() int {
+	return c.Display.TitleMinSeverity
 }

@@ -159,7 +159,7 @@ const (
 )
 
 // AcknowledgeProblem acknowledges a problem event.
-func (c *Client) AcknowledgeProblem(ctx context.Context, eventID string, message string) error {
+func (c *Client) AcknowledgeProblem(ctx context.Context, eventID, message string) error {
 	action := ActionAcknowledge
 	if message != "" {
 		action |= ActionAddMessage
@@ -205,7 +205,7 @@ func (c *Client) AcknowledgeProblems(ctx context.Context, eventIDs []string, mes
 }
 
 // CloseProblem closes a problem (marks as resolved manually).
-func (c *Client) CloseProblem(ctx context.Context, eventID string, message string) error {
+func (c *Client) CloseProblem(ctx context.Context, eventID, message string) error {
 	action := ActionClose
 	if message != "" {
 		action |= ActionAddMessage
@@ -319,7 +319,7 @@ func (c *Client) GetEventHistory(ctx context.Context, params EventHistoryParams)
 }
 
 // GetRecentEvents retrieves events from the last N hours.
-func (c *Client) GetRecentEvents(ctx context.Context, hours int, limit int) ([]Event, error) {
+func (c *Client) GetRecentEvents(ctx context.Context, hours, limit int) ([]Event, error) {
 	params := DefaultEventHistoryParams()
 	params.TimeFrom = time.Now().Add(-time.Duration(hours) * time.Hour).Unix()
 	if limit > 0 {

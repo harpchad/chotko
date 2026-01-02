@@ -103,7 +103,7 @@ func main() {
 	}
 
 	// Validate configuration
-	if err := cfg.Validate(); err != nil {
+	if err = cfg.Validate(); err != nil {
 		fmt.Fprintf(os.Stderr, "Configuration error: %v\n", err)
 		os.Exit(1)
 	}

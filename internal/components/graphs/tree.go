@@ -188,7 +188,7 @@ func FormatCategoryName(prefix string) string {
 	parts := strings.Split(prefix, ".")
 	if len(parts) > 0 {
 		last := parts[len(parts)-1]
-		if len(last) > 0 {
+		if last != "" {
 			return strings.ToUpper(last[:1]) + last[1:]
 		}
 	}

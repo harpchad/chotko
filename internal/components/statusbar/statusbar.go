@@ -112,7 +112,7 @@ func (m Model) View() string {
 			}
 		}
 		if m.textFilter != "" {
-			parts = append(parts, fmt.Sprintf("\"%s\"", m.textFilter))
+			parts = append(parts, fmt.Sprintf("%q", m.textFilter))
 		}
 		filterText := "⚡ Filter: " + joinParts(parts, ", ")
 		center = m.styles.StatusFilter.Render(filterText)

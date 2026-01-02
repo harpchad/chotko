@@ -58,7 +58,7 @@ func (c *Client) GetItems(ctx context.Context, params ItemGetParams) ([]Item, er
 
 // GetNumericItems retrieves numeric items (float and unsigned int) for the given hosts.
 // This is used for the graphs tab to fetch items that can be charted.
-func (c *Client) GetNumericItems(ctx context.Context, hostIDs []string, keyPrefixes []string) ([]Item, error) {
+func (c *Client) GetNumericItems(ctx context.Context, hostIDs, keyPrefixes []string) ([]Item, error) {
 	params := DefaultItemGetParams()
 	params.HostIDs = hostIDs
 	// Filter to numeric value types only (0=float, 3=unsigned int)
@@ -138,7 +138,7 @@ func (c *Client) GetHistory(ctx context.Context, params HistoryGetParams) ([]His
 }
 
 // GetItemHistory retrieves history for a single item over a time range.
-func (c *Client) GetItemHistory(ctx context.Context, itemID string, valueType string, hours int) ([]History, error) {
+func (c *Client) GetItemHistory(ctx context.Context, itemID, valueType string, hours int) ([]History, error) {
 	// Determine history type based on value_type
 	historyType := 0 // float by default
 	if valueType == ItemValueTypeUnsigned {

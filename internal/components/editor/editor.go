@@ -239,6 +239,8 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 			return m.updateTriggerList(keyMsg)
 		case TypeHostMacros:
 			return m.updateMacroList(keyMsg)
+		default:
+			// Unknown editor type, ignore input
 		}
 	}
 
@@ -400,6 +402,8 @@ func (m Model) updateConfirm(msg tea.KeyMsg) (Model, tea.Cmd) {
 					}
 				}
 			}
+		default:
+			// Unknown editor type, no action
 		}
 
 	case "n", "N", "esc":
@@ -450,6 +454,8 @@ func (m Model) View() string {
 		content.WriteString(m.viewTriggerList())
 	case TypeHostMacros:
 		content.WriteString(m.viewMacroList())
+	default:
+		// Unknown editor type, show nothing
 	}
 
 	// Confirmation overlay
