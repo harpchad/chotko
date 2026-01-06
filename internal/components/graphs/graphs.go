@@ -56,6 +56,11 @@ func (m *Model) SetFocused(focused bool) {
 	m.focused = focused
 }
 
+// SetStyles updates the component's styles (for runtime theme changes).
+func (m *Model) SetStyles(styles *theme.Styles) {
+	m.styles = styles
+}
+
 // SetItems updates the items and rebuilds the tree, preserving expanded state.
 func (m *Model) SetItems(items []zabbix.Item, categories []string) {
 	// Save current expanded state before rebuilding

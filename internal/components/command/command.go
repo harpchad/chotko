@@ -47,6 +47,11 @@ func (m *Model) SetWidth(width int) {
 	m.input.Width = width - 4
 }
 
+// SetStyles updates the component's styles (for runtime theme changes).
+func (m *Model) SetStyles(styles *theme.Styles) {
+	m.styles = styles
+}
+
 // SetMode activates a specific input mode.
 func (m *Model) SetMode(mode Mode) {
 	m.mode = mode

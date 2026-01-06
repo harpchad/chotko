@@ -17,6 +17,7 @@ func TestBuiltinThemes(t *testing.T) {
 		ThemeCatppuccin,
 		ThemeTokyoNight,
 		ThemeSolarized,
+		ThemeHighContrast,
 	}
 
 	// Verify all expected themes are present
@@ -45,6 +46,7 @@ func TestBuiltinThemeNames(t *testing.T) {
 		ThemeCatppuccin,
 		ThemeTokyoNight,
 		ThemeSolarized,
+		ThemeHighContrast,
 	}
 
 	if len(names) != len(expectedNames) {
@@ -74,6 +76,7 @@ func TestThemeConstants(t *testing.T) {
 		{"ThemeCatppuccin", ThemeCatppuccin, "catppuccin"},
 		{"ThemeTokyoNight", ThemeTokyoNight, "tokyonight"},
 		{"ThemeSolarized", ThemeSolarized, "solarized"},
+		{"ThemeHighContrast", ThemeHighContrast, "highcontrast"},
 	}
 
 	for _, tt := range tests {
@@ -225,6 +228,24 @@ func TestSolarizedTheme(t *testing.T) {
 
 	if theme.Description == "" {
 		t.Error("SolarizedTheme().Description should not be empty")
+	}
+}
+
+func TestHighContrastTheme(t *testing.T) {
+	t.Parallel()
+
+	theme := HighContrastTheme()
+
+	if theme == nil {
+		t.Fatal("HighContrastTheme() returned nil")
+	}
+
+	if theme.Name != ThemeHighContrast {
+		t.Errorf("HighContrastTheme().Name = %q, want %q", theme.Name, ThemeHighContrast)
+	}
+
+	if theme.Description == "" {
+		t.Error("HighContrastTheme().Description should not be empty")
 	}
 }
 

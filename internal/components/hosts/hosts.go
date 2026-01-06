@@ -47,6 +47,11 @@ func (m *Model) SetFocused(focused bool) {
 	m.focused = focused
 }
 
+// SetStyles updates the component's styles (for runtime theme changes).
+func (m *Model) SetStyles(styles *theme.Styles) {
+	m.styles = styles
+}
+
 // SetHosts updates the hosts list.
 func (m *Model) SetHosts(hosts []zabbix.Host) {
 	m.hosts = hosts

@@ -13,6 +13,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New config options: `window_title`, `emoji_title`, `title_min_severity`
 - Text fallback mode for terminals that don't support emoji in titles
 
+## [0.5.0] - 2025-01-06
+
+### Added
+
+- **Runtime theme switching**: Change themes without restarting via `:theme` command or `:theme <name>`
+- **High contrast theme**: WCAG AAA compliant theme for accessibility (`--theme high-contrast`)
+- **Artifact signing**: Release binaries are now signed with Sigstore cosign for verification
+- **Security scan**: govulncheck added to CI pipeline
+- Minimum terminal size enforcement (60x12) with friendly error message
+- Loading indicator during initial Zabbix connection
+- Distinct severity symbols for better differentiation (⬤▲◆■●○)
+- Adaptive pane proportions based on terminal width
+- Environment variables documentation in README (CHOTKO_SERVER, CHOTKO_TOKEN, CHOTKO_PASSWORD)
+
+### Changed
+
+- Help modal now uses 2-column layout to fit smaller screens
+- Host counts now calculated from loaded hosts on Hosts tab (eliminates redundant API call)
+
+### Fixed
+
+- Help modal now correctly shows F1-F4 tab shortcuts
+- O(1) lookup performance for ignore list matching
+
+### Security
+
+- Password input in setup wizard is now masked
+- Warning displayed when using `--password` flag (visible in process list)
+- Warning displayed when `insecure_skip_verify` is enabled
+- CI job timeouts added to prevent runaway builds
+
 ## [0.4.2] - 2025-01-02
 
 ### Added
@@ -95,7 +126,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Zabbix API client
 - Basic theme support
 
-[Unreleased]: https://github.com/harpchad/chotko/compare/v0.4.2...HEAD
+[Unreleased]: https://github.com/harpchad/chotko/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/harpchad/chotko/compare/v0.4.2...v0.5.0
 [0.4.2]: https://github.com/harpchad/chotko/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/harpchad/chotko/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/harpchad/chotko/compare/v0.3.0...v0.4.0
