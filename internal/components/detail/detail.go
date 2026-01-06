@@ -60,6 +60,11 @@ func (m *Model) SetFocused(focused bool) {
 	m.focused = focused
 }
 
+// SetStyles updates the component's styles (for runtime theme changes).
+func (m *Model) SetStyles(styles *theme.Styles) {
+	m.styles = styles
+}
+
 // SetProblem sets the problem to display.
 func (m *Model) SetProblem(p *zabbix.Problem) {
 	m.mode = ViewModeProblem

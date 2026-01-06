@@ -26,6 +26,7 @@ type List struct {
 	Ignores []Rule `yaml:"ignores"`
 	path    string
 	mu      sync.RWMutex
+	lookup  map[string]struct{} // Fast lookup map: key = "hostID:triggerID"
 }
 
 // Load loads the ignore list from the config directory.
@@ -35,6 +36,7 @@ func Load(configDir string) (*List, error) {
 	l := &List{
 		Ignores: []Rule{},
 		path:    path,
+		lookup:  make(map[string]struct{}),
 	}
 
 	data, err := os.ReadFile(path)
@@ -50,6 +52,9 @@ func Load(configDir string) (*List, error) {
 		// Log warning but return empty list to avoid blocking startup
 		return l, fmt.Errorf("failed to parse ignores file: %w", err)
 	}
+
+	// Build lookup map for O(1) checks
+	l.rebuildLookup()
 
 	return l, nil
 }
@@ -81,16 +86,25 @@ func (l *List) Save() error {
 	return nil
 }
 
+// rebuildLookup rebuilds the lookup map from the Ignores slice.
+// Must be called with lock held or during initialization.
+func (l *List) rebuildLookup() {
+	l.lookup = make(map[string]struct{}, len(l.Ignores))
+	for _, rule := range l.Ignores {
+		key := rule.HostID + ":" + rule.TriggerID
+		l.lookup[key] = struct{}{}
+	}
+}
+
 // Add adds a new ignore rule. Returns error if the rule already exists.
 func (l *List) Add(rule Rule) error {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
-	// Check for duplicates
-	for _, existing := range l.Ignores {
-		if existing.HostID == rule.HostID && existing.TriggerID == rule.TriggerID {
-			return fmt.Errorf("already ignored")
-		}
+	// Check for duplicates using fast lookup
+	key := rule.HostID + ":" + rule.TriggerID
+	if _, exists := l.lookup[key]; exists {
+		return fmt.Errorf("already ignored")
 	}
 
 	// Set creation time if not set
@@ -99,6 +113,7 @@ func (l *List) Add(rule Rule) error {
 	}
 
 	l.Ignores = append(l.Ignores, rule)
+	l.lookup[key] = struct{}{}
 	return nil
 }
 
@@ -116,20 +131,23 @@ func (l *List) Remove(index int) (Rule, bool) {
 
 	removed := l.Ignores[idx]
 	l.Ignores = append(l.Ignores[:idx], l.Ignores[idx+1:]...)
+
+	// Remove from lookup map
+	key := removed.HostID + ":" + removed.TriggerID
+	delete(l.lookup, key)
+
 	return removed, true
 }
 
 // IsIgnored returns true if the given host+trigger combination is ignored.
+// Uses O(1) map lookup for performance.
 func (l *List) IsIgnored(hostID, triggerID string) bool {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
 
-	for _, rule := range l.Ignores {
-		if rule.HostID == hostID && rule.TriggerID == triggerID {
-			return true
-		}
-	}
-	return false
+	key := hostID + ":" + triggerID
+	_, exists := l.lookup[key]
+	return exists
 }
 
 // Rules returns a copy of all ignore rules.

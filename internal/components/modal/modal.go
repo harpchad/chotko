@@ -49,6 +49,11 @@ func (m *Model) SetScreenSize(width, height int) {
 	m.screenHeight = height
 }
 
+// SetStyles updates the component's styles (for runtime theme changes).
+func (m *Model) SetStyles(styles *theme.Styles) {
+	m.styles = styles
+}
+
 // Show displays the modal with the given content.
 func (m *Model) Show(modalType Type, title, message string) {
 	m.visible = true
@@ -71,8 +76,9 @@ func (m *Model) ShowHelp() {
 	m.visible = true
 	m.modalType = TypeHelp
 	m.title = "Keyboard Shortcuts"
-	m.width = 50
-	m.height = 24
+	// Use wider 2-column layout to reduce height
+	m.width = 76
+	m.height = 20
 }
 
 // ShowMessage displays a simple message modal.
@@ -154,21 +160,18 @@ func (m Model) View() string {
 	)
 }
 
-// renderHelp renders the help content.
+// renderHelp renders the help content in a 2-column layout.
 func (m Model) renderHelp() string {
-	var b strings.Builder
-
-	sections := []struct {
+	// Define sections - split into left and right columns
+	leftSections := []struct {
 		title string
 		keys  [][]string
 	}{
 		{
 			title: "Navigation",
 			keys: [][]string{
-				{"↑/k", "Move up"},
-				{"↓/j", "Move down"},
-				{"PgUp/Ctrl+U", "Page up"},
-				{"PgDn/Ctrl+D", "Page down"},
+				{"↑/k ↓/j", "Move up/down"},
+				{"PgUp/PgDn", "Page up/down"},
 				{"Home/g", "Go to top"},
 				{"End/G", "Go to bottom"},
 			},
@@ -176,36 +179,9 @@ func (m Model) renderHelp() string {
 		{
 			title: "Tabs & Panes",
 			keys: [][]string{
-				{"]/L", "Next tab"},
-				{"[/H", "Previous tab"},
-				{"F1-F3", "Jump to tab"},
+				{"]/L [/H", "Next/prev tab"},
+				{"F1-F4", "Jump to tab"},
 				{"Tab", "Next pane"},
-				{"Shift+Tab", "Previous pane"},
-			},
-		},
-		{
-			title: "Actions",
-			keys: [][]string{
-				{"a", "Acknowledge problem"},
-				{"A", "Acknowledge with message"},
-				{"r", "Refresh data"},
-				{"Enter", "Select/Confirm"},
-			},
-		},
-		{
-			title: "Host Editing (Hosts tab)",
-			keys: [][]string{
-				{"t", "Edit triggers"},
-				{"m", "Edit macros"},
-				{"e", "Enable/disable host"},
-			},
-		},
-		{
-			title: "Alert Ignoring (Alerts tab)",
-			keys: [][]string{
-				{"i", "Ignore alert locally"},
-				{"I", "List ignored alerts"},
-				{":unignore N", "Remove ignore rule"},
 			},
 		},
 		{
@@ -216,16 +192,66 @@ func (m Model) renderHelp() string {
 				{"Ctrl+L", "Clear filter"},
 			},
 		},
+	}
+
+	rightSections := []struct {
+		title string
+		keys  [][]string
+	}{
+		{
+			title: "Actions",
+			keys: [][]string{
+				{"a/A", "Ack / Ack+message"},
+				{"r", "Refresh data"},
+				{"Enter", "Select/Confirm"},
+			},
+		},
+		{
+			title: "Alerts Tab",
+			keys: [][]string{
+				{"i", "Ignore alert"},
+				{"I", "List ignores"},
+			},
+		},
+		{
+			title: "Hosts Tab",
+			keys: [][]string{
+				{"t/m", "Triggers/Macros"},
+				{"e", "Enable/disable"},
+			},
+		},
 		{
 			title: "General",
 			keys: [][]string{
 				{":", "Command mode"},
-				{"?", "Show this help"},
-				{"Esc", "Cancel/Close"},
-				{"q", "Quit"},
+				{":theme", "Theme picker"},
+				{"?", "This help"},
+				{"q/Esc", "Quit/Close"},
 			},
 		},
 	}
+
+	// Render left column
+	leftCol := m.renderHelpColumn(leftSections)
+
+	// Render right column
+	rightCol := m.renderHelpColumn(rightSections)
+
+	// Join columns with separator
+	separator := m.styles.Subtle.Render(" │ ")
+	result := lipgloss.JoinHorizontal(lipgloss.Top, leftCol, separator, rightCol)
+
+	return result + "\n" + m.styles.Subtle.Render("Press Esc to close")
+}
+
+// renderHelpColumn renders a single column of help sections.
+func (m Model) renderHelpColumn(sections []struct {
+	title string
+	keys  [][]string
+},
+) string {
+	var b strings.Builder
+	colWidth := 34
 
 	for i, section := range sections {
 		if i > 0 {
@@ -235,14 +261,11 @@ func (m Model) renderHelp() string {
 		b.WriteString("\n")
 
 		for _, kv := range section.keys {
-			keyText := m.styles.HelpKey.Width(14).Render(kv[0])
+			keyText := m.styles.HelpKey.Width(12).Render(kv[0])
 			desc := m.styles.HelpDesc.Render(kv[1])
-			b.WriteString("  " + keyText + " " + desc + "\n")
+			b.WriteString(" " + keyText + " " + desc + "\n")
 		}
 	}
 
-	b.WriteString("\n")
-	b.WriteString(m.styles.Subtle.Render("Press Esc to close"))
-
-	return b.String()
+	return lipgloss.NewStyle().Width(colWidth).Render(b.String())
 }

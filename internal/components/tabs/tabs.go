@@ -33,6 +33,11 @@ func (m *Model) SetWidth(width int) {
 	m.width = width
 }
 
+// SetStyles updates the component's styles (for runtime theme changes).
+func (m *Model) SetStyles(styles *theme.Styles) {
+	m.styles = styles
+}
+
 // SetActive sets the active tab index.
 func (m *Model) SetActive(index int) {
 	if index >= 0 && index < len(m.tabs) {

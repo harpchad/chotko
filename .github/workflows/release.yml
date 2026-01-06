@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: write
+  id-token: write  # Required for Sigstore cosign OIDC signing
 
 env:
   GO_VERSION: '1.24'
@@ -98,6 +99,9 @@ jobs:
         with:
           path: artifacts
 
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v3
+
       - name: Prepare release assets
         run: |
           mkdir -p release
@@ -117,6 +121,19 @@ jobs:
           cd release
           sha256sum * > checksums.txt
           cat checksums.txt
+
+      - name: Sign artifacts with Sigstore cosign
+        run: |
+          cd release
+          # Sign each binary and the checksums file
+          for file in chotko-*; do
+            echo "Signing $file..."
+            cosign sign-blob --yes --output-signature "${file}.sig" --output-certificate "${file}.pem" "$file"
+          done
+          # Sign the checksums file
+          cosign sign-blob --yes --output-signature checksums.txt.sig --output-certificate checksums.txt.pem checksums.txt
+          echo "All artifacts signed successfully"
+          ls -la
 
       - name: Get version info
         id: version
@@ -180,6 +197,20 @@ jobs:
 
           ```bash
           sha256sum -c checksums.txt
+          ```
+
+          ### Verify Signature (Optional)
+
+          All binaries are signed using [Sigstore cosign](https://www.sigstore.dev/). To verify:
+
+          ```bash
+          # Install cosign: https://docs.sigstore.dev/cosign/system_config/installation/
+          cosign verify-blob \
+            --signature chotko-linux-amd64.sig \
+            --certificate chotko-linux-amd64.pem \
+            --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+            --certificate-identity-regexp '^https://github.com/${{ github.repository }}/.github/workflows/release.yml@.*$' \
+            chotko-linux-amd64
           ```
 
           ## Quick Start

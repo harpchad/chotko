@@ -6,6 +6,8 @@ import (
 	"os"
 	"strings"
 
+	"golang.org/x/term"
+
 	"github.com/harpchad/chotko/internal/theme"
 )
 
@@ -80,11 +82,12 @@ func RunWizard() (*Config, error) {
 		cfg.Auth.Username = username
 
 		fmt.Print("Password: ")
-		password, readErr := reader.ReadString('\n')
+		passwordBytes, readErr := term.ReadPassword(int(os.Stdin.Fd()))
 		if readErr != nil {
 			return nil, fmt.Errorf("failed to read password: %w", readErr)
 		}
-		password = strings.TrimSpace(password)
+		fmt.Println() // Add newline after hidden input
+		password := strings.TrimSpace(string(passwordBytes))
 		if password == "" {
 			return nil, fmt.Errorf("password is required")
 		}

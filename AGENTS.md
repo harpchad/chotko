@@ -135,12 +135,12 @@ None currently.
 
 ### Theme Additions
 
-- [ ] High contrast theme (accessibility)
+- [x] High contrast theme (accessibility)
+- [x] Runtime theme switching (`:theme` command)
 - [ ] Light mode themes (solarized-light, catppuccin-latte)
 - [ ] Auto-detect terminal background (dark/light)
 - [ ] ANSI-256 fallback themes for limited terminals
 - [ ] ANSI-16 basic fallback
-- [ ] Custom theme hot-reload
 
 ### Integration Ideas
 

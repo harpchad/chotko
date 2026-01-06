@@ -88,6 +88,11 @@ func New(styles *theme.Styles) Model {
 	}
 }
 
+// SetStyles updates the component's styles (for runtime theme changes).
+func (m *Model) SetStyles(styles *theme.Styles) {
+	m.styles = styles
+}
+
 // SetScreenSize sets the screen dimensions for centering.
 func (m *Model) SetScreenSize(width, height int) {
 	m.screenWidth = width

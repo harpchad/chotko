@@ -52,6 +52,11 @@ func (m *Model) SetFocused(focused bool) {
 	m.focused = focused
 }
 
+// SetStyles updates the component's styles (for runtime theme changes).
+func (m *Model) SetStyles(styles *theme.Styles) {
+	m.styles = styles
+}
+
 // SetProblems updates the problems list.
 func (m *Model) SetProblems(problems []zabbix.Problem) {
 	m.problems = problems
@@ -336,20 +341,22 @@ func (m Model) renderRow(p zabbix.Problem, selected bool) string {
 	// Severity indicator
 	severity := p.SeverityInt()
 
+	// Use distinct symbols for each severity level for accessibility
+	// (allows differentiation without relying solely on color)
 	var indicator string
 	switch severity {
 	case 5:
-		indicator = "●"
+		indicator = "⬤" // Disaster - large filled circle
 	case 4:
-		indicator = "●"
+		indicator = "▲" // High - triangle
 	case 3:
-		indicator = "◐"
+		indicator = "◆" // Average - diamond
 	case 2:
-		indicator = "○"
+		indicator = "■" // Warning - square
 	case 1:
-		indicator = "○"
+		indicator = "●" // Information - small filled circle
 	default:
-		indicator = "○"
+		indicator = "○" // Not classified - empty circle
 	}
 
 	// Host name

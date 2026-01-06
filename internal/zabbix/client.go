@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -64,6 +65,9 @@ func WithTimeout(timeout time.Duration) ClientOption {
 }
 
 // WithInsecureSkipVerify disables TLS certificate verification.
+// WARNING: This makes the connection vulnerable to man-in-the-middle attacks.
+// Only use for development/testing with self-signed certificates.
+// A warning will be printed to stderr when this option is used.
 func WithInsecureSkipVerify() ClientOption {
 	return func(c *Client) {
 		if transport, ok := c.httpClient.Transport.(*http.Transport); ok {
@@ -71,6 +75,8 @@ func WithInsecureSkipVerify() ClientOption {
 				transport.TLSClientConfig = &tls.Config{MinVersion: tls.VersionTLS12}
 			}
 			transport.TLSClientConfig.InsecureSkipVerify = true
+			// Print warning to stderr - this is intentionally visible
+			fmt.Fprintln(os.Stderr, "WARNING: TLS certificate verification disabled - connection is insecure")
 		}
 	}
 }

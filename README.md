@@ -62,6 +62,29 @@ chotko --min-severity 4
 
 ## Configuration
 
+### Environment Variables (Recommended)
+
+For security, credentials should be provided via environment variables rather than CLI flags or config files:
+
+| Variable | Description |
+|----------|-------------|
+| `CHOTKO_SERVER` | Zabbix server URL |
+| `CHOTKO_TOKEN` | API token (recommended for Zabbix 5.4+) |
+| `CHOTKO_PASSWORD` | Password (if using user/password auth) |
+
+```bash
+# Recommended: Use environment variables
+export CHOTKO_TOKEN=your-api-token
+chotko -s https://zabbix.example.com
+
+# Or inline for one-time use
+CHOTKO_TOKEN=your-api-token chotko -s https://zabbix.example.com
+```
+
+**Security note:** Avoid using `-p`/`--password` flags as they are visible in process listings (`ps`). Use `CHOTKO_PASSWORD` environment variable instead.
+
+### Config File
+
 Configuration is stored in `~/.config/chotko/config.yaml`:
 
 ```yaml
@@ -80,6 +103,8 @@ display:
   min_severity: 0       # 0=all, 1-5=filter
   theme: "nord"
 ```
+
+**Precedence:** CLI flags > Environment variables > Config file
 
 ## Key Bindings
 

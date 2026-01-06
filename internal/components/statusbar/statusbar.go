@@ -37,6 +37,11 @@ func (m *Model) SetWidth(width int) {
 	m.width = width
 }
 
+// SetStyles updates the component's styles (for runtime theme changes).
+func (m *Model) SetStyles(styles *theme.Styles) {
+	m.styles = styles
+}
+
 // SetCounts updates the host counts.
 func (m *Model) SetCounts(counts *zabbix.HostCounts) {
 	m.counts = counts

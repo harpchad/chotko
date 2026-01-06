@@ -13,7 +13,10 @@ import (
 	"github.com/harpchad/chotko/internal/components/command"
 	"github.com/harpchad/chotko/internal/components/editor"
 	"github.com/harpchad/chotko/internal/components/graphs"
+	"github.com/harpchad/chotko/internal/config"
 	"github.com/harpchad/chotko/internal/ignores"
+	"github.com/harpchad/chotko/internal/theme"
+	"github.com/harpchad/chotko/internal/zabbix"
 )
 
 // Update handles all incoming messages and updates the model accordingly.
@@ -38,6 +41,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.errorModal.Hide()
 				return m, nil
 			}
+		}
+		return m, nil
+	}
+
+	// Handle theme picker if visible
+	if m.showThemePicker {
+		if keyMsg, ok := msg.(tea.KeyMsg); ok {
+			return m.handleThemePickerInput(keyMsg)
 		}
 		return m, nil
 	}
@@ -154,6 +165,11 @@ func (m Model) handleHostsLoadedMsg(msg HostsLoadedMsg) (tea.Model, tea.Cmd) {
 
 	m.hosts = msg.Hosts
 	m.hostList.SetHosts(msg.Hosts)
+
+	// Calculate host counts from the loaded hosts to avoid redundant API calls
+	counts := zabbix.CalculateHostCounts(msg.Hosts)
+	m.hostCounts = counts
+	m.statusBar.SetCounts(counts)
 
 	if m.tabBar.Active() == TabHosts {
 		if selected := m.hostList.Selected(); selected != nil {
@@ -409,22 +425,25 @@ func (m Model) updateListPane(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 // loadDataForCurrentTab returns commands to load data for the current tab.
 func (m *Model) loadDataForCurrentTab() []tea.Cmd {
-	cmds := []tea.Cmd{m.loadHostCounts()}
+	var cmds []tea.Cmd
 
 	switch m.tabBar.Active() {
 	case TabAlerts:
-		cmds = append(cmds, m.loadProblems())
+		// Load host counts separately for alerts tab
+		cmds = append(cmds, m.loadHostCounts(), m.loadProblems())
 	case TabHosts:
+		// loadHosts will calculate host counts from the loaded hosts,
+		// avoiding redundant API calls (GetHostCounts internally calls GetAllHosts)
 		cmds = append(cmds, m.loadHosts())
 	case TabEvents:
-		cmds = append(cmds, m.loadEvents())
+		cmds = append(cmds, m.loadHostCounts(), m.loadEvents())
 	case TabGraphs:
 		// Load both items and history for graphs tab
 		// History will be loaded after ItemsLoadedMsg is received
-		cmds = append(cmds, m.loadItems())
+		cmds = append(cmds, m.loadHostCounts(), m.loadItems())
 	default:
 		// For other tabs, load problems by default
-		cmds = append(cmds, m.loadProblems())
+		cmds = append(cmds, m.loadHostCounts(), m.loadProblems())
 	}
 
 	return cmds
@@ -904,7 +923,106 @@ func (m Model) executeCommand(cmd string) (tea.Model, tea.Cmd) {
 		m.showIgnoresModal()
 	case strings.HasPrefix(cmd, "unignore "):
 		return m.handleUnignoreCommand(cmd)
+	case strings.HasPrefix(cmd, "theme "):
+		return m.handleThemeCommand(cmd)
+	case cmd == "theme" || cmd == "themes":
+		// Show theme picker
+		return m.showThemePickerModal()
 	}
+	return m, nil
+}
+
+// handleThemeCommand changes the current theme.
+func (m Model) handleThemeCommand(cmd string) (tea.Model, tea.Cmd) {
+	// Parse theme name from "theme <name>"
+	parts := strings.Fields(cmd)
+	if len(parts) != 2 {
+		m.statusBar.SetStatus("Usage: :theme <name>")
+		return m, nil
+	}
+
+	themeName := parts[1]
+	return m.applyThemeByName(themeName)
+}
+
+// showThemePickerModal shows the interactive theme picker.
+func (m Model) showThemePickerModal() (tea.Model, tea.Cmd) {
+	m.themeNames = theme.BuiltinThemeNames()
+	m.themePickerIndex = 0
+	m.originalTheme = m.theme
+	m.showThemePicker = true
+
+	// Find current theme in the list
+	for i, name := range m.themeNames {
+		if name == m.theme.Name {
+			m.themePickerIndex = i
+			break
+		}
+	}
+
+	return m, nil
+}
+
+// handleThemePickerInput handles keyboard input in the theme picker.
+func (m Model) handleThemePickerInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "up", "k":
+		if m.themePickerIndex > 0 {
+			m.themePickerIndex--
+			// Preview theme
+			return m.previewTheme(m.themeNames[m.themePickerIndex])
+		}
+	case "down", "j":
+		if m.themePickerIndex < len(m.themeNames)-1 {
+			m.themePickerIndex++
+			// Preview theme
+			return m.previewTheme(m.themeNames[m.themePickerIndex])
+		}
+	case "enter":
+		// Confirm selection
+		m.showThemePicker = false
+		m.originalTheme = nil
+		m.statusBar.SetStatus(fmt.Sprintf("Theme: %s", m.themeNames[m.themePickerIndex]))
+		return m, nil
+	case "esc", "q":
+		// Cancel - restore original theme
+		m.showThemePicker = false
+		if m.originalTheme != nil {
+			m.theme = m.originalTheme
+			m.styles = theme.NewStyles(m.originalTheme)
+			m.applyTheme()
+		}
+		m.originalTheme = nil
+		return m, nil
+	}
+	return m, nil
+}
+
+// previewTheme applies a theme temporarily for preview.
+func (m Model) previewTheme(themeName string) (tea.Model, tea.Cmd) {
+	t, err := theme.Load(themeName, config.Dir())
+	if err != nil {
+		return m, nil
+	}
+
+	m.theme = t
+	m.styles = theme.NewStyles(t)
+	m.applyTheme()
+	return m, nil
+}
+
+// applyThemeByName loads and applies a theme by name.
+func (m Model) applyThemeByName(themeName string) (tea.Model, tea.Cmd) {
+	t, err := theme.Load(themeName, config.Dir())
+	if err != nil {
+		m.statusBar.SetStatus(fmt.Sprintf("Theme not found: %s", themeName))
+		return m, nil
+	}
+
+	m.theme = t
+	m.styles = theme.NewStyles(t)
+	m.applyTheme()
+	m.statusBar.SetStatus(fmt.Sprintf("Theme: %s", themeName))
 	return m, nil
 }
 

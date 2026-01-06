@@ -44,9 +44,13 @@ const (
 
 // Layout constants for UI rendering.
 const (
-	ListWidthPercent   = 45 // Percentage of width for list pane
-	DetailWidthPercent = 55 // Percentage of width for detail pane
-	LogoutTimeout      = 5  // Seconds to wait for logout on shutdown
+	LogoutTimeout     = 5  // Seconds to wait for logout on shutdown
+	MinTerminalWidth  = 60 // Minimum terminal width for usable UI
+	MinTerminalHeight = 12 // Minimum terminal height for usable UI
+
+	// Adaptive pane width thresholds
+	NarrowTerminalWidth   = 80  // Below this, use narrow proportions
+	StandardTerminalWidth = 120 // Above this, use wide proportions
 )
 
 // Zabbix object type constants.
@@ -109,11 +113,17 @@ type Model struct {
 	commandInput command.Model
 
 	// Modal state
-	showHelp   bool
-	showError  bool
-	showEditor bool
-	errorModal modal.Model
-	editorPane editor.Model
+	showHelp        bool
+	showError       bool
+	showEditor      bool
+	showThemePicker bool
+	errorModal      modal.Model
+	editorPane      editor.Model
+
+	// Theme picker state
+	themeNames       []string     // Available theme names
+	themePickerIndex int          // Current selection in picker
+	originalTheme    *theme.Theme // Theme before opening picker (for cancel)
 
 	// Loading states
 	loading     bool
@@ -131,6 +141,9 @@ type Model struct {
 	detailPaneX   int // X position where detail pane starts
 	contentY      int // Y position where content panes start (after status bar and tab bar)
 	contentHeight int // Height of content area
+
+	// Terminal size tracking
+	tooSmall bool // True when terminal is below minimum usable size
 
 	// Ignore list for locally hiding alerts
 	ignoreList            *ignores.List
@@ -544,10 +557,33 @@ func (m *Model) disableHost(hostID string) tea.Cmd {
 	}
 }
 
+// calculateListWidthPercent returns the percentage of width for the list pane
+// based on available terminal width. Adapts proportions for different sizes:
+// - Narrow (<80): 55% list / 45% detail - prioritize list on small screens
+// - Standard (80-120): 45% list / 55% detail - balanced view
+// - Wide (>120): 40% list / 60% detail - more room for details
+func (m *Model) calculateListWidthPercent(availableWidth int) int {
+	switch {
+	case availableWidth < NarrowTerminalWidth:
+		return 55 // Narrow: prioritize list
+	case availableWidth < StandardTerminalWidth:
+		return 45 // Standard: balanced
+	default:
+		return 40 // Wide: more detail space
+	}
+}
+
 // SetSize updates the window dimensions.
 func (m *Model) SetSize(width, height int) {
 	m.width = width
 	m.height = height
+
+	// Check for minimum usable size
+	if width < MinTerminalWidth || height < MinTerminalHeight {
+		m.tooSmall = true
+		return
+	}
+	m.tooSmall = false
 
 	// Calculate pane sizes
 	statusBarHeight := 1
@@ -555,10 +591,10 @@ func (m *Model) SetSize(width, height int) {
 	commandHeight := 1
 	contentHeight := height - statusBarHeight - tabBarHeight - commandHeight - 4 // borders
 
-	// Split width based on defined percentages
-	// Account for borders: each pane has 2 chars (left+right border)
+	// Split width based on adaptive proportions
 	availableWidth := width - 4 // 4 = 2 borders per pane * 2 panes
-	listWidth := availableWidth * ListWidthPercent / 100
+	listWidthPercent := m.calculateListWidthPercent(availableWidth)
+	listWidth := availableWidth * listWidthPercent / 100
 	detailWidth := availableWidth - listWidth
 
 	// Store pane bounds for mouse tracking
@@ -577,6 +613,20 @@ func (m *Model) SetSize(width, height int) {
 	m.tabBar.SetWidth(width)
 	m.commandInput.SetWidth(width)
 	m.editorPane.SetScreenSize(width, height)
+}
+
+// applyTheme updates all component styles after a theme change.
+func (m *Model) applyTheme() {
+	m.statusBar.SetStyles(m.styles)
+	m.tabBar.SetStyles(m.styles)
+	m.alertList.SetStyles(m.styles)
+	m.hostList.SetStyles(m.styles)
+	m.eventList.SetStyles(m.styles)
+	m.graphList.SetStyles(m.styles)
+	m.detailPane.SetStyles(m.styles)
+	m.commandInput.SetStyles(m.styles)
+	m.errorModal.SetStyles(m.styles)
+	m.editorPane.SetStyles(m.styles)
 }
 
 // Shutdown performs cleanup.

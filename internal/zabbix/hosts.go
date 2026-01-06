@@ -64,13 +64,9 @@ func (c *Client) GetAllHosts(ctx context.Context) ([]Host, error) {
 	return c.GetHosts(ctx, params)
 }
 
-// GetHostCounts retrieves aggregated host status counts.
-func (c *Client) GetHostCounts(ctx context.Context) (*HostCounts, error) {
-	hosts, err := c.GetAllHosts(ctx)
-	if err != nil {
-		return nil, err
-	}
-
+// CalculateHostCounts calculates host status counts from a pre-fetched host list.
+// Use this when you already have hosts to avoid redundant API calls.
+func CalculateHostCounts(hosts []Host) *HostCounts {
 	counts := &HostCounts{
 		Total: len(hosts),
 	}
@@ -97,7 +93,18 @@ func (c *Client) GetHostCounts(ctx context.Context) (*HostCounts, error) {
 		}
 	}
 
-	return counts, nil
+	return counts
+}
+
+// GetHostCounts retrieves aggregated host status counts.
+// Note: If you already have hosts, use CalculateHostCounts() to avoid redundant API calls.
+func (c *Client) GetHostCounts(ctx context.Context) (*HostCounts, error) {
+	hosts, err := c.GetAllHosts(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return CalculateHostCounts(hosts), nil
 }
 
 // GetHost retrieves a single host by ID.
