@@ -365,6 +365,44 @@ func TestHost_IsAvailable(t *testing.T) {
 	}
 }
 
+func TestProblem_AllowsManualClose(t *testing.T) {
+	tests := []struct {
+		name          string
+		relatedObject RelatedObject
+		want          bool
+	}{
+		{
+			name:          "manual close allowed",
+			relatedObject: RelatedObject{ManualClose: "1"},
+			want:          true,
+		},
+		{
+			name:          "manual close not allowed",
+			relatedObject: RelatedObject{ManualClose: "0"},
+			want:          false,
+		},
+		{
+			name:          "manual close empty",
+			relatedObject: RelatedObject{ManualClose: ""},
+			want:          false,
+		},
+		{
+			name:          "manual close other value",
+			relatedObject: RelatedObject{ManualClose: "2"},
+			want:          false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := Problem{RelatedObject: tt.relatedObject}
+			if got := p.AllowsManualClose(); got != tt.want {
+				t.Errorf("AllowsManualClose() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestHost_DisplayName(t *testing.T) {
 	tests := []struct {
 		name     string

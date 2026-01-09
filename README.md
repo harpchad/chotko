@@ -123,6 +123,7 @@ display:
 | `Shift+Tab` | Previous pane |
 | `a` | Acknowledge selected alert |
 | `A` | Acknowledge with message |
+| `c` | Close alert (if trigger allows manual close) |
 | `t` | Edit triggers for selected host |
 | `m` | Edit macros for selected host |
 | `e` | Toggle host monitoring (Hosts tab) |

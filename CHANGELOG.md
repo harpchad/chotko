@@ -7,11 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2025-01-09
+
 ### Added
 
+- **Close alert**: Press `c` to manually close/resolve alerts when the trigger allows manual close
 - Dynamic window/tab title showing alert counts by severity (💥 Disaster, 🔥 High, 🚨 Average, ⚠️ Warning, ⓘ Info)
 - New config options: `window_title`, `emoji_title`, `title_min_severity`
 - Text fallback mode for terminals that don't support emoji in titles
+
+### Changed
+
+- Detail pane actions hint now conditionally shows `[c]lose` only when manual close is available
+- Status bar displays message when manual close is not permitted for a trigger
 
 ## [0.5.0] - 2025-01-06
 
@@ -126,7 +134,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Zabbix API client
 - Basic theme support
 
-[Unreleased]: https://github.com/harpchad/chotko/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/harpchad/chotko/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/harpchad/chotko/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/harpchad/chotko/compare/v0.4.2...v0.5.0
 [0.4.2]: https://github.com/harpchad/chotko/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/harpchad/chotko/compare/v0.4.0...v0.4.1
