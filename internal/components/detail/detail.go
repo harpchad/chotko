@@ -247,11 +247,16 @@ func (m Model) viewProblem() string {
 			}
 		}
 
-		// Actions hint
+		// Actions hint - include [c]lose only if manual close is allowed
+		actionHint := "[a]ck [A]ck+msg"
+		if p.AllowsManualClose() {
+			actionHint += " [c]lose"
+		}
+		actionHint += " [t]riggers [m]acros [r]efresh"
 		lines = append(lines,
 			"",
 			strings.Repeat("─", max(0, m.width-4)),
-			m.styles.Subtle.Render("[a]ck [A]ck+msg [t]riggers [m]acros [r]efresh"),
+			m.styles.Subtle.Render(actionHint),
 		)
 
 		b.WriteString(m.renderLines(lines))

@@ -42,6 +42,9 @@ type KeyMap struct {
 	Ignore      key.Binding
 	ListIgnores key.Binding
 
+	// Alert closing
+	CloseAlert key.Binding
+
 	// Filtering
 	Filter         key.Binding
 	ClearFilter    key.Binding
@@ -169,6 +172,12 @@ func DefaultKeyMap() KeyMap {
 			key.WithHelp("I", "list ignores"),
 		),
 
+		// Alert closing
+		CloseAlert: key.NewBinding(
+			key.WithKeys("c"),
+			key.WithHelp("c", "close alert"),
+		),
+
 		// Filtering
 		Filter: key.NewBinding(
 			key.WithKeys("/"),
@@ -223,8 +232,8 @@ func (k KeyMap) FullHelp() [][]key.Binding {
 		{k.Acknowledge, k.AckMessage, k.Refresh},
 		// Host editing
 		{k.EditTriggers, k.EditMacros, k.ToggleMonitor},
-		// Alert ignoring
-		{k.Ignore, k.ListIgnores},
+		// Alert ignoring and closing
+		{k.Ignore, k.ListIgnores, k.CloseAlert},
 		// Filtering & Modes
 		{k.Filter, k.ClearFilter, k.Command, k.Help, k.Quit},
 	}

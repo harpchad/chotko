@@ -408,6 +408,28 @@ func (m *Model) acknowledgeProblem(message string) tea.Cmd {
 	}
 }
 
+// closeProblem closes (manually resolves) the selected problem.
+func (m *Model) closeProblem(message string) tea.Cmd {
+	// Capture values for the goroutine
+	client := m.client
+	ctx := m.ctx
+	selected := m.alertList.Selected()
+
+	return func() tea.Msg {
+		if client == nil || selected == nil {
+			return CloseResultMsg{Success: false}
+		}
+
+		err := client.CloseProblem(ctx, selected.EventID, message)
+
+		return CloseResultMsg{
+			EventID: selected.EventID,
+			Success: err == nil,
+			Err:     err,
+		}
+	}
+}
+
 // loadHostTriggers fetches triggers for a specific host.
 // If selectTriggerID is non-empty, that trigger will be pre-selected in the editor.
 func (m *Model) loadHostTriggers(hostID, selectTriggerID string) tea.Cmd {

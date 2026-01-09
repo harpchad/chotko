@@ -83,6 +83,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.handleHostCountsLoadedMsg(msg)
 	case AcknowledgeResultMsg:
 		return m.handleAcknowledgeResultMsg(msg)
+	case CloseResultMsg:
+		return m.handleCloseResultMsg(msg)
 	case ErrorMsg:
 		m.showError = true
 		m.errorModal.ShowError(msg.Title, msg.Message, msg.Err)
@@ -264,6 +266,17 @@ func (m Model) handleAcknowledgeResultMsg(msg AcknowledgeResultMsg) (tea.Model, 
 		m.errorModal.ShowError("Acknowledge Failed", "Could not acknowledge problem", msg.Err)
 		return m, nil
 	}
+	return m, m.loadProblems()
+}
+
+// handleCloseResultMsg handles close result.
+func (m Model) handleCloseResultMsg(msg CloseResultMsg) (tea.Model, tea.Cmd) {
+	if msg.Err != nil {
+		m.showError = true
+		m.errorModal.ShowError("Close Failed", "Could not close problem", msg.Err)
+		return m, nil
+	}
+	m.statusBar.SetStatus("Problem closed")
 	return m, m.loadProblems()
 }
 
@@ -567,6 +580,8 @@ func (m Model) handleActionKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd, bool) {
 		return m.handleIgnore()
 	case key.Matches(msg, m.keys.ListIgnores):
 		return m.handleListIgnores()
+	case key.Matches(msg, m.keys.CloseAlert):
+		return m.handleCloseAlert()
 	}
 	return m, nil, false
 }
@@ -706,6 +721,27 @@ func (m Model) handleIgnoreConfirm(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 func (m Model) handleListIgnores() (tea.Model, tea.Cmd, bool) {
 	m.showIgnoresModal()
 	return m, nil, true
+}
+
+// handleCloseAlert closes the selected alert if manual close is allowed.
+func (m Model) handleCloseAlert() (tea.Model, tea.Cmd, bool) {
+	// Only works on Alerts tab
+	if m.tabBar.Active() != TabAlerts {
+		return m, nil, true
+	}
+
+	selected := m.alertList.Selected()
+	if selected == nil {
+		return m, nil, true
+	}
+
+	// Check if manual close is allowed for this trigger
+	if !selected.AllowsManualClose() {
+		m.statusBar.SetStatus("Manual close not allowed for this alert")
+		return m, nil, true
+	}
+
+	return m, m.closeProblem(""), true
 }
 
 // showIgnoresModal displays the ignores list in a modal.

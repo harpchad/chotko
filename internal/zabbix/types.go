@@ -31,8 +31,9 @@ type Problem struct {
 
 // RelatedObject represents the trigger/item that caused the event.
 type RelatedObject struct {
-	TriggerID string `json:"triggerid,omitempty"`
-	Status    string `json:"status,omitempty"` // 0=enabled, 1=disabled
+	TriggerID   string `json:"triggerid,omitempty"`
+	Status      string `json:"status,omitempty"`       // 0=enabled, 1=disabled
+	ManualClose string `json:"manual_close,omitempty"` // 0=no, 1=yes (allow manual close)
 }
 
 // URL represents a Zabbix URL associated with a problem.
@@ -310,6 +311,11 @@ func (h *Host) DisplayName() string {
 // IsRecovery returns true if this is a recovery (OK) event.
 func (p *Problem) IsRecovery() bool {
 	return p.REventID != "" && p.REventID != "0"
+}
+
+// AllowsManualClose returns true if the trigger allows manual closing of problems.
+func (p *Problem) AllowsManualClose() bool {
+	return p.RelatedObject.ManualClose == "1"
 }
 
 // RecoveryTime returns the recovery time if the problem was resolved.

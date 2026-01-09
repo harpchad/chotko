@@ -304,14 +304,17 @@ Important: BubbleTea uses value semantics for models. When returning `tea.Cmd` f
 | `?` | Help |
 | `q` | Quit |
 
-### Alert Ignoring (Alerts tab)
+### Alert Actions (Alerts tab)
 
 | Key | Action |
 |-----|--------|
+| `c` | Close alert (manually resolve) - only if trigger allows manual close |
 | `i` | Ignore selected alert locally (prompts y/n confirmation) |
 | `I` | List all ignored alerts |
 | `:ignores` | List all ignored alerts (command mode) |
 | `:unignore N` | Remove ignore rule by 1-based index |
+
+**Note:** The `c` key to close an alert only works if the trigger has "Allow manual close" enabled in Zabbix. The detail pane will show `[c]lose` in the actions hint when manual close is available.
 
 Ignored alerts are stored in `~/.config/chotko/ignores.yaml` and persist across sessions.
 Only trigger-based alerts can be ignored (by host+trigger combination).

@@ -37,6 +37,13 @@ type AcknowledgeResultMsg struct {
 	Err     error
 }
 
+// CloseResultMsg is sent after closing a problem.
+type CloseResultMsg struct {
+	EventID string
+	Success bool
+	Err     error
+}
+
 // RefreshTickMsg is sent periodically to trigger data refresh.
 type RefreshTickMsg struct{}
 

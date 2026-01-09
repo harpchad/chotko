@@ -96,7 +96,7 @@ func (c *Client) GetProblems(ctx context.Context, params ProblemGetParams) ([]Pr
 		SelectHosts:         []string{"hostid", "host", "name"},
 		SelectTags:          "extend",
 		SelectAcknowledges:  "extend",
-		SelectRelatedObject: []string{"triggerid", "status"},
+		SelectRelatedObject: []string{"triggerid", "status", "manual_close"},
 		EventIDs:            eventIDs,
 		SortField:           []string{"eventid"},
 		SortOrder:           "DESC",
