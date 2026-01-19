@@ -1,0 +1,13 @@
+pkgbase = chotko
+	pkgdesc = Terminal UI for Zabbix monitoring
+	pkgver = 0.7.0
+	pkgrel = 1
+	url = https://github.com/harpchad/chotko
+	arch = x86_64
+	arch = aarch64
+	license = MIT
+	makedepends = go>=1.24
+	source = chotko-0.7.0.tar.gz::https://github.com/harpchad/chotko/archive/refs/tags/v0.7.0.tar.gz
+	sha256sums = b7a7383679f761983e03ff732d38f624a5b0d55ab63526c0c730bd7d33aaf861
+
+pkgname = chotko

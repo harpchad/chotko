@@ -29,16 +29,62 @@ The name comes from the Russian slang word "чётко" (chotko), meaning "preci
 
 ## Installation
 
+### Homebrew (macOS/Linux)
+
+```bash
+brew install harpchad/tap/chotko
+```
+
+### Scoop (Windows)
+
+```powershell
+scoop bucket add harpchad https://github.com/harpchad/scoop-bucket
+scoop install chotko
+```
+
+### Arch Linux (AUR)
+
+```bash
+# Using yay
+yay -S chotko
+
+# Using paru
+paru -S chotko
+```
+
+### Download Binary
+
+Download the latest release from [GitHub Releases](https://github.com/harpchad/chotko/releases):
+
+| OS | Architecture | Download |
+|----|--------------|----------|
+| macOS | Apple Silicon | `chotko-darwin-arm64` |
+| macOS | Intel | `chotko-darwin-amd64` |
+| Linux | x86_64 | `chotko-linux-amd64` |
+| Linux | ARM64 | `chotko-linux-arm64` |
+| Windows | x86_64 | `chotko-windows-amd64.exe` |
+| Windows | ARM64 | `chotko-windows-arm64.exe` |
+
+### Build from Source
+
 ```bash
 go install github.com/harpchad/chotko/cmd/chotko@latest
 ```
 
-Or build from source:
+Or clone and build:
 
 ```bash
 git clone https://github.com/harpchad/chotko.git
 cd chotko
 go build -o chotko ./cmd/chotko
+```
+
+### Docker
+
+```bash
+docker run -it --rm \
+  -v ~/.config/chotko:/home/chotko/.config/chotko \
+  ghcr.io/harpchad/chotko:latest
 ```
 
 ## Usage

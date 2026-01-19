@@ -1,0 +1,29 @@
+# Maintainer: harpchad <harpchad@users.noreply.github.com>
+pkgname=chotko
+pkgver=0.7.0
+pkgrel=1
+pkgdesc="Terminal UI for Zabbix monitoring"
+arch=('x86_64' 'aarch64')
+url="https://github.com/harpchad/chotko"
+license=('MIT')
+makedepends=('go>=1.24')
+source=("${pkgname}-${pkgver}.tar.gz::https://github.com/harpchad/chotko/archive/refs/tags/v${pkgver}.tar.gz")
+sha256sums=('b7a7383679f761983e03ff732d38f624a5b0d55ab63526c0c730bd7d33aaf861')
+
+build() {
+    cd "${pkgname}-${pkgver}"
+    export CGO_CPPFLAGS="${CPPFLAGS}"
+    export CGO_CFLAGS="${CFLAGS}"
+    export CGO_CXXFLAGS="${CXXFLAGS}"
+    export CGO_LDFLAGS="${LDFLAGS}"
+    export GOFLAGS="-buildmode=pie -trimpath -ldflags=-linkmode=external -mod=readonly -modcacherw"
+
+    go build -ldflags "-s -w -X main.version=${pkgver}" -o ${pkgname} ./cmd/chotko
+}
+
+package() {
+    cd "${pkgname}-${pkgver}"
+    install -Dm755 ${pkgname} "${pkgdir}/usr/bin/${pkgname}"
+    install -Dm644 LICENSE "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+    install -Dm644 README.md "${pkgdir}/usr/share/doc/${pkgname}/README.md"
+}

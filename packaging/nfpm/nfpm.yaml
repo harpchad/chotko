@@ -1,0 +1,45 @@
+# nFPM configuration for building Linux packages
+# Usage: nfpm package --config packaging/nfpm/nfpm.yaml --packager deb --target dist/
+#        nfpm package --config packaging/nfpm/nfpm.yaml --packager rpm --target dist/
+
+name: chotko
+arch: ${GOARCH}
+platform: linux
+version: v0.7.0
+version_schema: semver
+release: 1
+section: utils
+priority: optional
+maintainer: harpchad <harpchad@users.noreply.github.com>
+description: |
+  Terminal UI for Zabbix monitoring.
+  A keyboard-driven TUI application for monitoring Zabbix servers
+  with real-time alerts, host status, event history, and graphs.
+vendor: harpchad
+homepage: https://github.com/harpchad/chotko
+license: MIT
+
+contents:
+  - src: ./chotko
+    dst: /usr/bin/chotko
+    file_info:
+      mode: 0755
+
+  - src: ./LICENSE
+    dst: /usr/share/licenses/chotko/LICENSE
+    file_info:
+      mode: 0644
+
+  - src: ./README.md
+    dst: /usr/share/doc/chotko/README.md
+    file_info:
+      mode: 0644
+
+# RPM specific
+rpm:
+  group: Applications/System
+  compression: gzip
+
+# DEB specific
+deb:
+  compression: gzip
