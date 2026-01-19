@@ -9,9 +9,9 @@ import (
 // ItemGetParams defines parameters for item.get API call.
 type ItemGetParams struct {
 	// Output fields to return
-	Output interface{} `json:"output,omitempty"`
+	Output any `json:"output,omitempty"`
 	// Select hosts
-	SelectHosts interface{} `json:"selectHosts,omitempty"`
+	SelectHosts any `json:"selectHosts,omitempty"`
 	// Filter by host IDs
 	HostIDs []string `json:"hostids,omitempty"`
 	// Filter by item IDs
@@ -25,7 +25,7 @@ type ItemGetParams struct {
 	// Filter to monitored items only
 	Monitored bool `json:"monitored,omitempty"`
 	// Filter by value types (0=float, 3=unsigned for numeric)
-	Filter map[string]interface{} `json:"filter,omitempty"`
+	Filter map[string]any `json:"filter,omitempty"`
 	// Sort field
 	SortField []string `json:"sortfield,omitempty"`
 	// Sort order
@@ -62,7 +62,7 @@ func (c *Client) GetNumericItems(ctx context.Context, hostIDs, keyPrefixes []str
 	params := DefaultItemGetParams()
 	params.HostIDs = hostIDs
 	// Filter to numeric value types only (0=float, 3=unsigned int)
-	params.Filter = map[string]interface{}{
+	params.Filter = map[string]any{
 		"value_type": []string{ItemValueTypeFloat, ItemValueTypeUnsigned},
 		"status":     "0", // enabled items only
 	}
@@ -115,7 +115,7 @@ type HistoryGetParams struct {
 	// Unix timestamp - get history until this time
 	TimeTill int64 `json:"time_till,omitempty"`
 	// Output fields
-	Output interface{} `json:"output,omitempty"`
+	Output any `json:"output,omitempty"`
 	// Sort field
 	SortField []string `json:"sortfield,omitempty"`
 	// Sort order

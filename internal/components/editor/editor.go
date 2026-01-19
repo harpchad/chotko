@@ -9,6 +9,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
+	"github.com/harpchad/chotko/internal/format"
 	"github.com/harpchad/chotko/internal/theme"
 	"github.com/harpchad/chotko/internal/zabbix"
 )
@@ -469,7 +470,7 @@ func (m Model) View() string {
 		content.WriteString(strings.Repeat("─", m.width-4))
 		content.WriteString("\n")
 		confirmMsg := fmt.Sprintf("Are you sure you want to %s '%s'? (y/n)",
-			m.confirmAction, truncate(m.confirmTarget, 30))
+			m.confirmAction, format.Truncate(m.confirmTarget, 30))
 		content.WriteString(m.styles.AlertSeverity[4].Render(confirmMsg))
 	}
 
@@ -527,7 +528,7 @@ func (m Model) viewTriggerList() string {
 
 			// Priority/severity
 			priority := theme.SeverityName(t.Trigger.PriorityInt())
-			desc := truncate(t.Trigger.Description, m.width-35)
+			desc := format.Truncate(t.Trigger.Description, m.width-35)
 
 			// Build the line - apply styles only if not selected
 			var line string
@@ -617,7 +618,7 @@ func (m Model) viewMacroList() string {
 				value = "******"
 			}
 
-			line := fmt.Sprintf("%s%s = %s", cursor, macro.Macro.Macro, truncate(value, m.width-len(macro.Macro.Macro)-10))
+			line := fmt.Sprintf("%s%s = %s", cursor, macro.Macro.Macro, format.Truncate(value, m.width-len(macro.Macro.Macro)-10))
 
 			if i == m.macroCursor {
 				// Pad to full width for consistent highlight
@@ -644,15 +645,4 @@ func (m Model) viewMacroList() string {
 	b.WriteString(m.styles.Subtle.Render("[e]dit value  [d]elete  [Esc] close"))
 
 	return b.String()
-}
-
-// truncate truncates a string to the given length with ellipsis.
-func truncate(s string, length int) string {
-	if len(s) <= length {
-		return s
-	}
-	if length <= 3 {
-		return s[:length]
-	}
-	return s[:length-3] + "..."
 }

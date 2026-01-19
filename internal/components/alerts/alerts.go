@@ -26,9 +26,10 @@ type Model struct {
 	focused  bool
 
 	// Filter state
-	minSeverity  int
-	textFilter   string
-	ignoredCount int // Number of alerts hidden by ignore rules
+	minSeverity    int
+	textFilter     string
+	ignoredCount   int         // Number of alerts hidden by ignore rules
+	severityCounts map[int]int // Cached counts by severity level
 
 	// Ignore checker function - returns true if hostID+triggerID should be hidden
 	isIgnored func(hostID, triggerID string) bool
@@ -86,6 +87,7 @@ func (m *Model) SetIgnoreChecker(fn func(hostID, triggerID string) bool) {
 func (m *Model) applyFilter() {
 	m.filtered = nil
 	m.ignoredCount = 0
+	m.severityCounts = make(map[int]int)
 	for _, p := range m.problems {
 		// Check ignore list first - skip if host+trigger is ignored
 		if m.isIgnored != nil {
@@ -118,6 +120,7 @@ func (m *Model) applyFilter() {
 			}
 		}
 		m.filtered = append(m.filtered, p)
+		m.severityCounts[p.SeverityInt()]++
 	}
 
 	// Reset cursor if out of bounds
@@ -154,6 +157,16 @@ func (m Model) SelectedIndex() int {
 // Total excludes ignored alerts (they are not counted as real alerts).
 func (m Model) Count() (total, filtered int) {
 	return len(m.problems) - m.ignoredCount, len(m.filtered)
+}
+
+// SeverityCounts returns a copy of the cached severity counts.
+// The map keys are severity levels (0-5), values are counts.
+func (m Model) SeverityCounts() map[int]int {
+	counts := make(map[int]int, len(m.severityCounts))
+	for k, v := range m.severityCounts {
+		counts[k] = v
+	}
+	return counts
 }
 
 // MoveUp moves the cursor up.

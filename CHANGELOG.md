@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.1] - 2025-01-19
+
+### Changed
+
+- Updated `interface{}` to `any` throughout zabbix package (Go 1.18+ style)
+- Moved `truncate` utility function to shared `format` package
+- Expanded `format` package documentation
+
+### Fixed
+
+- API client now limits response size to 10MB (prevents memory exhaustion)
+- Ignore list lookup optimized with nested map structure (eliminates string allocation)
+- Alert severity counts now cached during filtering (reduces duplicate iteration)
+- Added slice preallocation hints for better memory efficiency
+- SECURITY.md now shows correct supported versions (0.6.x, 0.5.x)
+- README now documents all config options (window_title, emoji_title, graphs section)
+- README now includes high-contrast theme in themes list
+- README now documents TLS/insecure_skip_verify configuration
+- CHANGELOG v0.3.0 now has release date
+
+### Documentation
+
+- Added comprehensive code review findings document (REVIEW_FINDINGS.md)
+- Added missing key bindings to README (i, I for ignore management)
+
 ## [0.6.0] - 2025-01-09
 
 ### Added
@@ -94,7 +119,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Row highlighting now displays consistently across all list components
 - Command bar no longer shows duplicate prompt characters
 
-## [0.3.0]
+## [0.3.0] - 2024-11-15
 
 ### Added
 
@@ -134,7 +159,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Zabbix API client
 - Basic theme support
 
-[Unreleased]: https://github.com/harpchad/chotko/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/harpchad/chotko/compare/v0.6.1...HEAD
+[0.6.1]: https://github.com/harpchad/chotko/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/harpchad/chotko/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/harpchad/chotko/compare/v0.4.2...v0.5.0
 [0.4.2]: https://github.com/harpchad/chotko/compare/v0.4.1...v0.4.2

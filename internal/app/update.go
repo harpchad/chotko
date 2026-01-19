@@ -14,6 +14,7 @@ import (
 	"github.com/harpchad/chotko/internal/components/editor"
 	"github.com/harpchad/chotko/internal/components/graphs"
 	"github.com/harpchad/chotko/internal/config"
+	"github.com/harpchad/chotko/internal/format"
 	"github.com/harpchad/chotko/internal/ignores"
 	"github.com/harpchad/chotko/internal/theme"
 	"github.com/harpchad/chotko/internal/zabbix"
@@ -677,7 +678,7 @@ func (m Model) handleIgnore() (tea.Model, tea.Cmd, bool) {
 		TriggerName: triggerName,
 	}
 	m.awaitingIgnoreConfirm = true
-	m.statusBar.SetStatus(fmt.Sprintf("Ignore %s / %s? (y/n)", hostName, truncate(triggerName, 30)))
+	m.statusBar.SetStatus(fmt.Sprintf("Ignore %s / %s? (y/n)", hostName, format.Truncate(triggerName, 30)))
 
 	return m, nil, true
 }
@@ -695,7 +696,7 @@ func (m Model) handleIgnoreConfirm(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				if err := m.ignoreList.Save(); err != nil {
 					m.statusBar.SetStatus(fmt.Sprintf("Ignored (save failed: %v)", err))
 				} else {
-					m.statusBar.SetStatus(fmt.Sprintf("Ignored: %s / %s", m.pendingIgnore.HostName, truncate(m.pendingIgnore.TriggerName, 20)))
+					m.statusBar.SetStatus(fmt.Sprintf("Ignored: %s / %s", m.pendingIgnore.HostName, format.Truncate(m.pendingIgnore.TriggerName, 20)))
 				}
 				// Refresh alerts to hide the ignored one
 				m.alertList.SetIgnoreChecker(m.ignoreList.IsIgnored)
@@ -757,24 +758,13 @@ func (m *Model) showIgnoresModal() {
 
 	rules := m.ignoreList.Rules()
 	for i, rule := range rules {
-		sb.WriteString(fmt.Sprintf("%2d. %s / %s\n", i+1, rule.HostName, truncate(rule.TriggerName, 40)))
+		sb.WriteString(fmt.Sprintf("%2d. %s / %s\n", i+1, rule.HostName, format.Truncate(rule.TriggerName, 40)))
 	}
 
 	sb.WriteString("\nUse :unignore N to remove a rule.")
 
 	m.showError = true
 	m.errorModal.ShowMessage("Ignored Alerts", sb.String())
-}
-
-// truncate truncates a string to maxLen characters with ellipsis.
-func truncate(s string, maxLen int) string {
-	if len(s) <= maxLen {
-		return s
-	}
-	if maxLen <= 3 {
-		return s[:maxLen]
-	}
-	return s[:maxLen-3] + "..."
 }
 
 // forwardToFocusedComponent forwards key events to the focused component.
@@ -1092,7 +1082,7 @@ func (m Model) handleUnignoreCommand(cmd string) (tea.Model, tea.Cmd) {
 	if err := m.ignoreList.Save(); err != nil {
 		m.statusBar.SetStatus(fmt.Sprintf("Removed (save failed: %v)", err))
 	} else {
-		m.statusBar.SetStatus(fmt.Sprintf("Removed: %s / %s", removed.HostName, truncate(removed.TriggerName, 20)))
+		m.statusBar.SetStatus(fmt.Sprintf("Removed: %s / %s", removed.HostName, format.Truncate(removed.TriggerName, 20)))
 	}
 
 	// Refresh alerts to show the previously ignored one

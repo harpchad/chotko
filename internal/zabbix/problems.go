@@ -20,37 +20,37 @@ func DefaultProblemGetParams() ProblemGetParams {
 // internalProblemGetParams defines parameters for problem.get API call.
 // Used internally to get current active problems (problem.get only returns unresolved problems).
 type internalProblemGetParams struct {
-	Output             interface{} `json:"output,omitempty"`
-	SelectTags         interface{} `json:"selectTags,omitempty"`
-	SelectAcknowledges interface{} `json:"selectAcknowledges,omitempty"`
-	Severities         []int       `json:"severities,omitempty"`
-	SortField          []string    `json:"sortfield,omitempty"`
-	SortOrder          string      `json:"sortorder,omitempty"`
-	Limit              int         `json:"limit,omitempty"`
+	Output             any      `json:"output,omitempty"`
+	SelectTags         any      `json:"selectTags,omitempty"`
+	SelectAcknowledges any      `json:"selectAcknowledges,omitempty"`
+	Severities         []int    `json:"severities,omitempty"`
+	SortField          []string `json:"sortfield,omitempty"`
+	SortOrder          string   `json:"sortorder,omitempty"`
+	Limit              int      `json:"limit,omitempty"`
 }
 
 // EventGetParams defines parameters for event.get API call.
 // We use event.get to get host information for problems.
 // See: https://www.zabbix.com/documentation/7.0/en/manual/api/reference/event/get
 type EventGetParams struct {
-	Output              interface{} `json:"output,omitempty"`
-	SelectHosts         interface{} `json:"selectHosts,omitempty"`
-	SelectTags          interface{} `json:"selectTags,omitempty"`
-	SelectAcknowledges  interface{} `json:"selectAcknowledges,omitempty"`
-	SelectRelatedObject interface{} `json:"selectRelatedObject,omitempty"`
-	EventIDs            []string    `json:"eventids,omitempty"`
-	HostIDs             []string    `json:"hostids,omitempty"`
-	GroupIDs            []string    `json:"groupids,omitempty"`
-	ObjectIDs           []string    `json:"objectids,omitempty"`
-	Severities          []int       `json:"severities,omitempty"`
-	Value               []int       `json:"value,omitempty"`  // 0 = OK, 1 = problem (can be array)
-	Source              *int        `json:"source,omitempty"` // 0 = trigger (single int, use pointer to omit when nil)
-	Object              *int        `json:"object,omitempty"` // 0 = trigger (single int, use pointer to omit when nil)
-	SortField           []string    `json:"sortfield,omitempty"`
-	SortOrder           string      `json:"sortorder,omitempty"`
-	Limit               int         `json:"limit,omitempty"`
-	TimeFrom            int64       `json:"time_from,omitempty"`
-	TimeTill            int64       `json:"time_till,omitempty"`
+	Output              any      `json:"output,omitempty"`
+	SelectHosts         any      `json:"selectHosts,omitempty"`
+	SelectTags          any      `json:"selectTags,omitempty"`
+	SelectAcknowledges  any      `json:"selectAcknowledges,omitempty"`
+	SelectRelatedObject any      `json:"selectRelatedObject,omitempty"`
+	EventIDs            []string `json:"eventids,omitempty"`
+	HostIDs             []string `json:"hostids,omitempty"`
+	GroupIDs            []string `json:"groupids,omitempty"`
+	ObjectIDs           []string `json:"objectids,omitempty"`
+	Severities          []int    `json:"severities,omitempty"`
+	Value               []int    `json:"value,omitempty"`  // 0 = OK, 1 = problem (can be array)
+	Source              *int     `json:"source,omitempty"` // 0 = trigger (single int, use pointer to omit when nil)
+	Object              *int     `json:"object,omitempty"` // 0 = trigger (single int, use pointer to omit when nil)
+	SortField           []string `json:"sortfield,omitempty"`
+	SortOrder           string   `json:"sortorder,omitempty"`
+	Limit               int      `json:"limit,omitempty"`
+	TimeFrom            int64    `json:"time_from,omitempty"`
+	TimeTill            int64    `json:"time_till,omitempty"`
 }
 
 // GetProblems retrieves current active problems from Zabbix.
@@ -130,7 +130,7 @@ func (c *Client) GetProblemsWithMinSeverity(ctx context.Context, minSeverity int
 	params := DefaultProblemGetParams()
 
 	// Build severity list from minSeverity to 5
-	severities := make([]int, 0)
+	severities := make([]int, 0, 6-minSeverity)
 	for s := minSeverity; s <= 5; s++ {
 		severities = append(severities, s)
 	}
@@ -173,7 +173,7 @@ func (c *Client) AcknowledgeProblem(ctx context.Context, eventID, message string
 
 	// Result contains eventids but the type varies by Zabbix version (string or number)
 	// We don't need the result, just check if the call succeeded
-	var result interface{}
+	var result any
 	if err := c.call(ctx, "event.acknowledge", params, &result); err != nil {
 		return fmt.Errorf("failed to acknowledge problem: %w", err)
 	}
@@ -196,7 +196,7 @@ func (c *Client) AcknowledgeProblems(ctx context.Context, eventIDs []string, mes
 
 	// Result contains eventids but the type varies by Zabbix version (string or number)
 	// We don't need the result, just check if the call succeeded
-	var result interface{}
+	var result any
 	if err := c.call(ctx, "event.acknowledge", params, &result); err != nil {
 		return fmt.Errorf("failed to acknowledge problems: %w", err)
 	}
@@ -219,7 +219,7 @@ func (c *Client) CloseProblem(ctx context.Context, eventID, message string) erro
 
 	// Result contains eventids but the type varies by Zabbix version (string or number)
 	// We don't need the result, just check if the call succeeded
-	var result interface{}
+	var result any
 	if err := c.call(ctx, "event.acknowledge", params, &result); err != nil {
 		return fmt.Errorf("failed to close problem: %w", err)
 	}
@@ -236,7 +236,7 @@ func (c *Client) SuppressProblem(ctx context.Context, eventID string) error {
 
 	// Result contains eventids but the type varies by Zabbix version (string or number)
 	// We don't need the result, just check if the call succeeded
-	var result interface{}
+	var result any
 	if err := c.call(ctx, "event.acknowledge", params, &result); err != nil {
 		return fmt.Errorf("failed to suppress problem: %w", err)
 	}
@@ -253,7 +253,7 @@ func (c *Client) UnsuppressProblem(ctx context.Context, eventID string) error {
 
 	// Result contains eventids but the type varies by Zabbix version (string or number)
 	// We don't need the result, just check if the call succeeded
-	var result interface{}
+	var result any
 	if err := c.call(ctx, "event.acknowledge", params, &result); err != nil {
 		return fmt.Errorf("failed to unsuppress problem: %w", err)
 	}

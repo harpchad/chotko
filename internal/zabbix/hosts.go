@@ -8,15 +8,15 @@ import (
 // HostGetParams defines parameters for host.get API call.
 type HostGetParams struct {
 	// Output fields to return
-	Output interface{} `json:"output,omitempty"`
+	Output any `json:"output,omitempty"`
 	// Select interfaces
-	SelectInterfaces interface{} `json:"selectInterfaces,omitempty"`
+	SelectInterfaces any `json:"selectInterfaces,omitempty"`
 	// Select host groups
-	SelectHostGroups interface{} `json:"selectHostGroups,omitempty"`
+	SelectHostGroups any `json:"selectHostGroups,omitempty"`
 	// Select macros
-	SelectMacros interface{} `json:"selectMacros,omitempty"`
+	SelectMacros any `json:"selectMacros,omitempty"`
 	// Select triggers
-	SelectTriggers interface{} `json:"selectTriggers,omitempty"`
+	SelectTriggers any `json:"selectTriggers,omitempty"`
 	// Filter by host IDs
 	HostIDs []string `json:"hostids,omitempty"`
 	// Filter by group IDs
@@ -220,8 +220,8 @@ func (c *Client) SetHostMacros(ctx context.Context, hostID string, macros []Host
 
 // UserMacroGetParams defines parameters for usermacro.get API call.
 type UserMacroGetParams struct {
-	Output  interface{} `json:"output,omitempty"`
-	HostIDs []string    `json:"hostids,omitempty"`
+	Output  any      `json:"output,omitempty"`
+	HostIDs []string `json:"hostids,omitempty"`
 }
 
 // GetHostMacros retrieves all macros for a specific host.
