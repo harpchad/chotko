@@ -1,0 +1,28 @@
+{
+    "version": "0.7.0",
+    "description": "Terminal UI for Zabbix monitoring",
+    "homepage": "https://github.com/harpchad/chotko",
+    "license": "MIT",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/harpchad/chotko/releases/download/v0.7.0/chotko-windows-amd64.exe#/chotko.exe",
+            "hash": "75aa36a49d4dee741d4eb00a5eed08caf7e489ffcd8d32ab703d38881321e996"
+        },
+        "arm64": {
+            "url": "https://github.com/harpchad/chotko/releases/download/v0.7.0/chotko-windows-arm64.exe#/chotko.exe",
+            "hash": "fd19f5d8f41ea2d66e77c5ff2ceb50ebca94c90976cf888e018822b441bcac34"
+        }
+    },
+    "bin": "chotko.exe",
+    "checkver": "github",
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/harpchad/chotko/releases/download/v$version/chotko-windows-amd64.exe#/chotko.exe"
+            },
+            "arm64": {
+                "url": "https://github.com/harpchad/chotko/releases/download/v$version/chotko-windows-arm64.exe#/chotko.exe"
+            }
+        }
+    }
+}
