@@ -1,0 +1,26 @@
+# Git
+.git
+.gitignore
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# Build artifacts
+*.exe
+chotko
+
+# Documentation
+*.md
+!README.md
+
+# CI/CD
+.github
+.pre-commit-config.yaml
+
+# Test files
+*_test.go
+testdata
+coverage.out

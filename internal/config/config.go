@@ -20,7 +20,8 @@ type Config struct {
 
 // ServerConfig holds Zabbix server connection settings.
 type ServerConfig struct {
-	URL string `yaml:"url"`
+	URL       string  `yaml:"url"`
+	RateLimit float64 `yaml:"rate_limit,omitempty"` // Max requests per second (0 = unlimited)
 }
 
 // AuthConfig holds authentication settings.

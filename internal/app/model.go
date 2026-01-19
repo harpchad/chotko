@@ -217,11 +217,16 @@ func (m *Model) connect() tea.Cmd {
 	token := m.config.Auth.Token
 	username := m.config.Auth.Username
 	password := m.config.Auth.Password
+	rateLimit := m.config.Server.RateLimit
 	ctx := m.ctx
 
 	return func() tea.Msg {
-		// Create client
-		client := zabbix.NewClient(serverURL)
+		// Create client with options
+		var opts []zabbix.ClientOption
+		if rateLimit > 0 {
+			opts = append(opts, zabbix.WithRateLimit(rateLimit))
+		}
+		client := zabbix.NewClient(serverURL, opts...)
 
 		// Authenticate
 		if useToken {

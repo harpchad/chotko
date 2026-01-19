@@ -79,11 +79,11 @@ func TestNew(t *testing.T) {
 	if m.styles != styles {
 		t.Error("New() should set styles")
 	}
-	if m.cursor != 0 {
-		t.Errorf("New().cursor = %d, want 0", m.cursor)
+	if m.Cursor() != 0 {
+		t.Errorf("New().Cursor() = %d, want 0", m.Cursor())
 	}
-	if m.focused {
-		t.Error("New().focused should be false")
+	if m.Focused() {
+		t.Error("New().Focused() should be false")
 	}
 }
 
@@ -93,11 +93,11 @@ func TestModel_SetSize(t *testing.T) {
 	m := New(testStyles())
 	m.SetSize(100, 50)
 
-	if m.width != 100 {
-		t.Errorf("SetSize() width = %d, want 100", m.width)
+	if m.Width() != 100 {
+		t.Errorf("SetSize() Width() = %d, want 100", m.Width())
 	}
-	if m.height != 50 {
-		t.Errorf("SetSize() height = %d, want 50", m.height)
+	if m.Height() != 50 {
+		t.Errorf("SetSize() Height() = %d, want 50", m.Height())
 	}
 }
 
@@ -107,12 +107,12 @@ func TestModel_SetFocused(t *testing.T) {
 	m := New(testStyles())
 
 	m.SetFocused(true)
-	if !m.focused {
+	if !m.Focused() {
 		t.Error("SetFocused(true) should set focused to true")
 	}
 
 	m.SetFocused(false)
-	if m.focused {
+	if m.Focused() {
 		t.Error("SetFocused(false) should set focused to false")
 	}
 }
@@ -125,7 +125,7 @@ func TestModel_SetProblems(t *testing.T) {
 
 	m.SetProblems(problems)
 
-	total, filtered := m.Count()
+	total, filtered := m.ItemCount()
 	if total != 5 {
 		t.Errorf("SetProblems() total = %d, want 5", total)
 	}
@@ -158,7 +158,7 @@ func TestModel_SetMinSeverity(t *testing.T) {
 			m.SetProblems(testProblems())
 			m.SetMinSeverity(tt.minSeverity)
 
-			_, filtered := m.Count()
+			_, filtered := m.ItemCount()
 			if filtered != tt.wantFiltered {
 				t.Errorf("SetMinSeverity(%d) filtered = %d, want %d", tt.minSeverity, filtered, tt.wantFiltered)
 			}
@@ -191,7 +191,7 @@ func TestModel_SetTextFilter(t *testing.T) {
 			m.SetProblems(testProblems())
 			m.SetTextFilter(tt.filter)
 
-			_, filtered := m.Count()
+			_, filtered := m.ItemCount()
 			if filtered != tt.wantFiltered {
 				t.Errorf("SetTextFilter(%q) filtered = %d, want %d", tt.filter, filtered, tt.wantFiltered)
 			}
@@ -284,20 +284,20 @@ func TestModel_MoveUp(t *testing.T) {
 	// Move down first, then up
 	m.MoveDown()
 	m.MoveDown()
-	if m.cursor != 2 {
-		t.Errorf("cursor = %d, want 2", m.cursor)
+	if m.Cursor() != 2 {
+		t.Errorf("Cursor() = %d, want 2", m.Cursor())
 	}
 
 	m.MoveUp()
-	if m.cursor != 1 {
-		t.Errorf("After MoveUp, cursor = %d, want 1", m.cursor)
+	if m.Cursor() != 1 {
+		t.Errorf("After MoveUp, Cursor() = %d, want 1", m.Cursor())
 	}
 
 	// MoveUp at top should stay at 0
 	m.MoveUp()
 	m.MoveUp() // Try to go negative
-	if m.cursor != 0 {
-		t.Errorf("MoveUp at top, cursor = %d, want 0", m.cursor)
+	if m.Cursor() != 0 {
+		t.Errorf("MoveUp at top, Cursor() = %d, want 0", m.Cursor())
 	}
 }
 
@@ -309,22 +309,22 @@ func TestModel_MoveDown(t *testing.T) {
 	m.SetSize(100, 50)
 
 	m.MoveDown()
-	if m.cursor != 1 {
-		t.Errorf("MoveDown cursor = %d, want 1", m.cursor)
+	if m.Cursor() != 1 {
+		t.Errorf("MoveDown Cursor() = %d, want 1", m.Cursor())
 	}
 
 	// Move to end
 	m.MoveDown()
 	m.MoveDown()
 	m.MoveDown()
-	if m.cursor != 4 {
-		t.Errorf("cursor at end = %d, want 4", m.cursor)
+	if m.Cursor() != 4 {
+		t.Errorf("Cursor() at end = %d, want 4", m.Cursor())
 	}
 
 	// MoveDown at end should stay at 4
 	m.MoveDown()
-	if m.cursor != 4 {
-		t.Errorf("MoveDown at end, cursor = %d, want 4", m.cursor)
+	if m.Cursor() != 4 {
+		t.Errorf("MoveDown at end, Cursor() = %d, want 4", m.Cursor())
 	}
 }
 
@@ -337,15 +337,15 @@ func TestModel_PageUp(t *testing.T) {
 
 	// Move to end first
 	m.GoToBottom()
-	if m.cursor != 4 {
-		t.Errorf("cursor at bottom = %d, want 4", m.cursor)
+	if m.Cursor() != 4 {
+		t.Errorf("Cursor() at bottom = %d, want 4", m.Cursor())
 	}
 
 	// PageUp should move by visibleRows
 	m.PageUp()
 	// With 5 items and pageSize of 8, PageUp from 4 should go to 0
-	if m.cursor < 0 {
-		t.Errorf("PageUp cursor = %d, should not be negative", m.cursor)
+	if m.Cursor() < 0 {
+		t.Errorf("PageUp Cursor() = %d, should not be negative", m.Cursor())
 	}
 }
 
@@ -360,8 +360,8 @@ func TestModel_PageDown(t *testing.T) {
 	m.PageDown()
 	// With 5 items and pageSize of 8, PageDown from 0 would try to go to 8
 	// but should be clamped to 4 (last item)
-	if m.cursor != 4 {
-		t.Errorf("PageDown cursor = %d, want 4", m.cursor)
+	if m.Cursor() != 4 {
+		t.Errorf("PageDown Cursor() = %d, want 4", m.Cursor())
 	}
 }
 
@@ -377,11 +377,11 @@ func TestModel_GoToTop(t *testing.T) {
 	m.MoveDown()
 
 	m.GoToTop()
-	if m.cursor != 0 {
-		t.Errorf("GoToTop cursor = %d, want 0", m.cursor)
+	if m.Cursor() != 0 {
+		t.Errorf("GoToTop Cursor() = %d, want 0", m.Cursor())
 	}
-	if m.offset != 0 {
-		t.Errorf("GoToTop offset = %d, want 0", m.offset)
+	if m.Offset() != 0 {
+		t.Errorf("GoToTop Offset() = %d, want 0", m.Offset())
 	}
 }
 
@@ -393,8 +393,8 @@ func TestModel_GoToBottom(t *testing.T) {
 	m.SetSize(100, 50)
 
 	m.GoToBottom()
-	if m.cursor != 4 {
-		t.Errorf("GoToBottom cursor = %d, want 4", m.cursor)
+	if m.Cursor() != 4 {
+		t.Errorf("GoToBottom Cursor() = %d, want 4", m.Cursor())
 	}
 }
 
@@ -405,8 +405,8 @@ func TestModel_GoToBottom_Empty(t *testing.T) {
 	m.SetSize(100, 50)
 
 	m.GoToBottom()
-	if m.cursor != 0 {
-		t.Errorf("GoToBottom on empty list cursor = %d, want 0", m.cursor)
+	if m.Cursor() != 0 {
+		t.Errorf("GoToBottom on empty list Cursor() = %d, want 0", m.Cursor())
 	}
 }
 
@@ -431,7 +431,7 @@ func TestModel_Update_NotFocused(t *testing.T) {
 	msg := tea.KeyMsg{Type: tea.KeyDown}
 	newModel, cmd := m.Update(msg)
 
-	if newModel.cursor != 0 {
+	if newModel.Cursor() != 0 {
 		t.Error("Update should not change cursor when not focused")
 	}
 	if cmd != nil {
@@ -504,8 +504,8 @@ func TestModel_Update_KeyBindings(t *testing.T) {
 				m = newModel
 			}
 
-			if newModel.cursor != tt.wantCursor {
-				t.Errorf("After %s, cursor = %d, want %d", tt.name, newModel.cursor, tt.wantCursor)
+			if newModel.Cursor() != tt.wantCursor {
+				t.Errorf("After %s, Cursor() = %d, want %d", tt.name, newModel.Cursor(), tt.wantCursor)
 			}
 		})
 	}
@@ -595,7 +595,7 @@ func TestModel_CombinedFilters(t *testing.T) {
 	m.SetMinSeverity(4)
 	m.SetTextFilter("server")
 
-	_, filtered := m.Count()
+	_, filtered := m.ItemCount()
 	// Severity 4+ AND contains "server" in host or problem name:
 	// - server01 (sev 5) - host contains "server"
 	// - server04 (sev 4) - host contains "server"
@@ -616,55 +616,55 @@ func TestModel_FilterResetsCursor(t *testing.T) {
 	// Move cursor down
 	m.MoveDown()
 	m.MoveDown()
-	if m.cursor != 2 {
-		t.Errorf("cursor = %d, want 2", m.cursor)
+	if m.Cursor() != 2 {
+		t.Errorf("Cursor() = %d, want 2", m.Cursor())
 	}
 
 	// Apply filter that reduces list
 	m.SetMinSeverity(5) // Only 2 items (index 0, 1)
 
 	// Cursor should be adjusted to be within bounds
-	if m.cursor >= 2 {
-		t.Errorf("After filter, cursor = %d, should be < 2", m.cursor)
+	if m.Cursor() >= 2 {
+		t.Errorf("After filter, Cursor() = %d, should be < 2", m.Cursor())
 	}
 }
 
-func TestModel_Count(t *testing.T) {
+func TestModel_ItemCount(t *testing.T) {
 	t.Parallel()
 
 	m := New(testStyles())
 
 	// Empty
-	total, filtered := m.Count()
+	total, filtered := m.ItemCount()
 	if total != 0 || filtered != 0 {
-		t.Errorf("Empty Count() = (%d, %d), want (0, 0)", total, filtered)
+		t.Errorf("Empty ItemCount() = (%d, %d), want (0, 0)", total, filtered)
 	}
 
 	// With problems
 	m.SetProblems(testProblems())
-	total, filtered = m.Count()
+	total, filtered = m.ItemCount()
 	if total != 5 || filtered != 5 {
-		t.Errorf("Count() = (%d, %d), want (5, 5)", total, filtered)
+		t.Errorf("ItemCount() = (%d, %d), want (5, 5)", total, filtered)
 	}
 
 	// With filter
 	m.SetMinSeverity(5)
-	total, filtered = m.Count()
+	total, filtered = m.ItemCount()
 	if total != 5 || filtered != 2 {
-		t.Errorf("Filtered Count() = (%d, %d), want (5, 2)", total, filtered)
+		t.Errorf("Filtered ItemCount() = (%d, %d), want (5, 2)", total, filtered)
 	}
 }
 
-func TestModel_visibleRows(t *testing.T) {
+func TestModel_VisibleRows(t *testing.T) {
 	t.Parallel()
 
 	m := New(testStyles())
 	m.SetSize(100, 20)
 
-	// visibleRows = height - 2 (header and border)
-	visible := m.visibleRows()
+	// VisibleRows = height - 2 (header and border)
+	visible := m.VisibleRows()
 	if visible != 18 {
-		t.Errorf("visibleRows() = %d, want 18", visible)
+		t.Errorf("VisibleRows() = %d, want 18", visible)
 	}
 }
 
@@ -675,15 +675,15 @@ func TestModel_ensureVisible(t *testing.T) {
 	m.SetProblems(testProblems())
 	m.SetSize(100, 5) // Small height for testing scrolling
 
-	// visibleRows = 5 - 2 = 3
+	// VisibleRows = 5 - 2 = 3
 
 	// Move to bottom
 	m.GoToBottom() // cursor = 4
 
 	// offset should be adjusted so cursor is visible
 	// With 3 visible rows and cursor at 4, offset should be 4 - 3 + 1 = 2
-	if m.offset < 2 {
-		t.Errorf("After GoToBottom, offset = %d, should be >= 2", m.offset)
+	if m.Offset() < 2 {
+		t.Errorf("After GoToBottom, Offset() = %d, should be >= 2", m.Offset())
 	}
 }
 
@@ -717,9 +717,9 @@ func TestModel_EmptyProblems(t *testing.T) {
 	m.SetSize(80, 20)
 
 	// Should handle empty list gracefully
-	total, filtered := m.Count()
+	total, filtered := m.ItemCount()
 	if total != 0 || filtered != 0 {
-		t.Errorf("Empty problems Count() = (%d, %d), want (0, 0)", total, filtered)
+		t.Errorf("Empty problems ItemCount() = (%d, %d), want (0, 0)", total, filtered)
 	}
 
 	if m.Selected() != nil {
@@ -747,14 +747,14 @@ func TestModel_PageUpPageDown_EdgeCases(t *testing.T) {
 
 	// PageDown when all items visible should go to last
 	m.PageDown()
-	if m.cursor != 4 {
-		t.Errorf("PageDown cursor = %d, want 4", m.cursor)
+	if m.Cursor() != 4 {
+		t.Errorf("PageDown Cursor() = %d, want 4", m.Cursor())
 	}
 
 	// PageUp from last should go to first when all visible
 	m.PageUp()
-	if m.cursor < 0 {
-		t.Errorf("PageUp cursor = %d, should not be negative", m.cursor)
+	if m.Cursor() < 0 {
+		t.Errorf("PageUp Cursor() = %d, should not be negative", m.Cursor())
 	}
 }
 

@@ -10,20 +10,17 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	zone "github.com/lrstanley/bubblezone"
 
+	"github.com/harpchad/chotko/internal/components/listview"
 	"github.com/harpchad/chotko/internal/theme"
 	"github.com/harpchad/chotko/internal/zabbix"
 )
 
 // Model represents the hosts list component.
 type Model struct {
+	*listview.State
 	styles   *theme.Styles
 	hosts    []zabbix.Host
 	filtered []zabbix.Host
-	cursor   int
-	offset   int
-	width    int
-	height   int
-	focused  bool
 
 	// Filter state
 	textFilter string
@@ -32,19 +29,9 @@ type Model struct {
 // New creates a new hosts list model.
 func New(styles *theme.Styles) Model {
 	return Model{
+		State:  listview.New(),
 		styles: styles,
 	}
-}
-
-// SetSize sets the component dimensions.
-func (m *Model) SetSize(width, height int) {
-	m.width = width
-	m.height = height
-}
-
-// SetFocused sets the focus state.
-func (m *Model) SetFocused(focused bool) {
-	m.focused = focused
 }
 
 // SetStyles updates the component's styles (for runtime theme changes).
@@ -81,11 +68,8 @@ func (m *Model) applyFilter() {
 		m.filtered = append(m.filtered, h)
 	}
 
-	// Reset cursor if out of bounds
-	if m.cursor >= len(m.filtered) {
-		m.cursor = max(0, len(m.filtered)-1)
-	}
-	m.ensureVisible()
+	// Update count in State (handles cursor bounds automatically)
+	m.SetCount(len(m.filtered))
 }
 
 // Selected returns the currently selected host.
@@ -93,8 +77,9 @@ func (m *Model) applyFilter() {
 // valid until the next call to SetHosts or filter changes. Callers should
 // not store this pointer long-term.
 func (m Model) Selected() *zabbix.Host {
-	if m.cursor >= 0 && m.cursor < len(m.filtered) {
-		return &m.filtered[m.cursor]
+	cursor := m.Cursor()
+	if cursor >= 0 && cursor < len(m.filtered) {
+		return &m.filtered[cursor]
 	}
 	return nil
 }
@@ -111,105 +96,14 @@ func (m Model) SelectedIndex() int {
 	return -1
 }
 
-// Count returns the total and filtered host counts.
-func (m Model) Count() (total, filtered int) {
+// ItemCount returns the total and filtered host counts.
+func (m Model) ItemCount() (total, filtered int) {
 	return len(m.hosts), len(m.filtered)
-}
-
-// MoveUp moves the cursor up.
-func (m *Model) MoveUp() {
-	if m.cursor > 0 {
-		m.cursor--
-		m.ensureVisible()
-	}
-}
-
-// MoveDown moves the cursor down.
-func (m *Model) MoveDown() {
-	if m.cursor < len(m.filtered)-1 {
-		m.cursor++
-		m.ensureVisible()
-	}
-}
-
-// PageUp moves the cursor up by one page.
-func (m *Model) PageUp() {
-	m.cursor -= m.visibleRows()
-	if m.cursor < 0 {
-		m.cursor = 0
-	}
-	m.ensureVisible()
-}
-
-// PageDown moves the cursor down by one page.
-func (m *Model) PageDown() {
-	m.cursor += m.visibleRows()
-	if m.cursor >= len(m.filtered) {
-		m.cursor = len(m.filtered) - 1
-	}
-	if m.cursor < 0 {
-		m.cursor = 0
-	}
-	m.ensureVisible()
-}
-
-// GoToTop moves the cursor to the first item.
-func (m *Model) GoToTop() {
-	m.cursor = 0
-	m.offset = 0
-}
-
-// GoToBottom moves the cursor to the last item.
-func (m *Model) GoToBottom() {
-	m.cursor = max(0, len(m.filtered)-1)
-	m.ensureVisible()
-}
-
-// Scroll scrolls the list by delta lines (positive = down, negative = up).
-func (m *Model) Scroll(delta int) {
-	m.offset += delta
-	if m.offset < 0 {
-		m.offset = 0
-	}
-	maxOffset := len(m.filtered) - m.visibleRows()
-	if maxOffset < 0 {
-		maxOffset = 0
-	}
-	if m.offset > maxOffset {
-		m.offset = maxOffset
-	}
 }
 
 // FilteredCount returns the number of filtered items.
 func (m Model) FilteredCount() int {
 	return len(m.filtered)
-}
-
-// SetCursor sets the cursor to a specific index.
-func (m *Model) SetCursor(index int) {
-	if index >= 0 && index < len(m.filtered) {
-		m.cursor = index
-		m.ensureVisible()
-	}
-}
-
-// visibleRows returns the number of visible rows.
-func (m Model) visibleRows() int {
-	return m.height - 2 // Account for header and border
-}
-
-// ensureVisible ensures the cursor is visible in the viewport.
-func (m *Model) ensureVisible() {
-	visible := m.visibleRows()
-	if visible <= 0 {
-		return
-	}
-
-	if m.cursor < m.offset {
-		m.offset = m.cursor
-	} else if m.cursor >= m.offset+visible {
-		m.offset = m.cursor - visible + 1
-	}
 }
 
 // Init implements tea.Model.
@@ -219,7 +113,7 @@ func (m Model) Init() tea.Cmd {
 
 // Update implements tea.Model.
 func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
-	if !m.focused {
+	if !m.Focused() {
 		return m, nil
 	}
 
@@ -245,15 +139,18 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 
 // View implements tea.Model.
 func (m Model) View() string {
+	width := m.Width()
+	height := m.Height()
+
 	// Handle zero-size case
-	if m.width < 10 || m.height < 5 {
+	if width < 10 || height < 5 {
 		return ""
 	}
 
 	var b strings.Builder
 
 	// Header
-	total, filtered := m.Count()
+	total, filtered := m.ItemCount()
 	header := fmt.Sprintf("HOSTS (%d", filtered)
 	if total != filtered {
 		header += fmt.Sprintf("/%d", total)
@@ -263,17 +160,19 @@ func (m Model) View() string {
 	b.WriteString("\n")
 
 	// Calculate visible range
-	visible := m.visibleRows()
+	visible := m.VisibleRows()
 	if visible < 1 {
 		visible = 1
 	}
 
-	endIdx := min(m.offset+visible, len(m.filtered))
+	offset := m.Offset()
+	cursor := m.Cursor()
+	endIdx := min(offset+visible, len(m.filtered))
 
 	// Render rows
-	for i := m.offset; i < endIdx; i++ {
+	for i := offset; i < endIdx; i++ {
 		h := m.filtered[i]
-		row := m.renderRow(h, i == m.cursor)
+		row := m.renderRow(h, i == cursor)
 		// Mark row with zone for mouse click detection
 		rowID := fmt.Sprintf("host_%d", i)
 		b.WriteString(zone.Mark(rowID, row))
@@ -283,17 +182,17 @@ func (m Model) View() string {
 	}
 
 	// Pad remaining space
-	rendered := endIdx - m.offset
+	rendered := endIdx - offset
 	for i := rendered; i < visible; i++ {
 		b.WriteString("\n")
 	}
 
 	// Apply pane style
 	content := b.String()
-	if m.focused {
-		return m.styles.PaneFocused.Width(m.width).Height(m.height).Render(content)
+	if m.Focused() {
+		return m.styles.PaneFocused.Width(width).Height(height).Render(content)
 	}
-	return m.styles.PaneBlurred.Width(m.width).Height(m.height).Render(content)
+	return m.styles.PaneBlurred.Width(width).Height(height).Render(content)
 }
 
 // getHostIP returns the primary IP address of a host.
@@ -317,6 +216,8 @@ func (m Model) getHostIP(h zabbix.Host) string {
 
 // renderRow renders a single host row.
 func (m Model) renderRow(h zabbix.Host, selected bool) string {
+	width := m.Width()
+
 	// Status indicator based on availability
 	var indicator string
 	var statusStyle lipgloss.Style
@@ -340,7 +241,7 @@ func (m Model) renderRow(h zabbix.Host, selected bool) string {
 
 	// Host name
 	name := h.DisplayName()
-	nameWidth := m.width - 20 - 18 - 6 // IP width, status width, padding
+	nameWidth := width - 20 - 18 - 6 // IP width, status width, padding
 	if nameWidth < 10 {
 		nameWidth = 10
 	}
@@ -372,8 +273,8 @@ func (m Model) renderRow(h zabbix.Host, selected bool) string {
 
 		row := fmt.Sprintf("%s %s %s %s", indicator, namePadded, ipPadded, groupPadded)
 		// Pad to full width for consistent highlight
-		if len(row) < m.width-2 {
-			row += strings.Repeat(" ", m.width-2-len(row))
+		if len(row) < width-2 {
+			row += strings.Repeat(" ", width-2-len(row))
 		}
 		return m.styles.AlertSelected.Render(row)
 	}
@@ -385,5 +286,5 @@ func (m Model) renderRow(h zabbix.Host, selected bool) string {
 	groupStr := m.styles.Subtle.Width(15).Align(lipgloss.Right).Render(group)
 
 	row := fmt.Sprintf("%s %s %s %s", statusIcon, nameStr, ipStr, groupStr)
-	return m.styles.AlertNormal.Width(m.width - 2).Render(row)
+	return m.styles.AlertNormal.Width(width - 2).Render(row)
 }

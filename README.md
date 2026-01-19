@@ -130,6 +130,18 @@ server:
 
 **Warning:** Only use `insecure_skip_verify: true` for testing or when connecting to servers with self-signed certificates in trusted networks. This disables certificate validation and makes the connection vulnerable to man-in-the-middle attacks. For production use, configure proper CA certificates instead.
 
+### Rate Limiting
+
+To prevent overwhelming the Zabbix server with API requests:
+
+```yaml
+server:
+  url: "https://zabbix.example.com"
+  rate_limit: 10  # Max API requests per second (optional, default: unlimited)
+```
+
+Recommended values are 10-20 requests per second for most Zabbix servers. Set to 0 or omit for no rate limiting.
+
 ## Key Bindings
 
 | Key | Action |
