@@ -30,10 +30,10 @@ func TestNew(t *testing.T) {
 	if m.styles != styles {
 		t.Error("Expected styles to be set")
 	}
-	if m.cursor != 0 {
+	if m.Cursor() != 0 {
 		t.Error("Expected cursor to start at 0")
 	}
-	if m.focused {
+	if m.Focused() {
 		t.Error("Expected focused to be false initially")
 	}
 }
@@ -51,7 +51,7 @@ func TestSetEvents(t *testing.T) {
 
 	m.SetEvents(events)
 
-	total, filtered := m.Count()
+	total, filtered := m.ItemCount()
 	if total != 3 {
 		t.Errorf("Expected total count 3, got %d", total)
 	}
@@ -91,7 +91,7 @@ func TestSetTextFilter(t *testing.T) {
 	// Filter by event name
 	m.SetTextFilter("disk")
 
-	total, filtered := m.Count()
+	total, filtered := m.ItemCount()
 	if total != 3 {
 		t.Errorf("Expected total count 3, got %d", total)
 	}
@@ -107,7 +107,7 @@ func TestSetTextFilter(t *testing.T) {
 	// Filter by host
 	m.SetTextFilter("database")
 
-	_, filtered = m.Count()
+	_, filtered = m.ItemCount()
 	if filtered != 1 {
 		t.Errorf("Expected filtered count 1 for database filter, got %d", filtered)
 	}
@@ -128,44 +128,44 @@ func TestNavigation(t *testing.T) {
 	m.SetEvents(events)
 
 	// Initial selection
-	if m.cursor != 0 {
-		t.Errorf("Expected cursor at 0, got %d", m.cursor)
+	if m.Cursor() != 0 {
+		t.Errorf("Expected cursor at 0, got %d", m.Cursor())
 	}
 
 	// Move down
 	m.MoveDown()
-	if m.cursor != 1 {
-		t.Errorf("Expected cursor at 1 after MoveDown, got %d", m.cursor)
+	if m.Cursor() != 1 {
+		t.Errorf("Expected cursor at 1 after MoveDown, got %d", m.Cursor())
 	}
 
 	// Move down again
 	m.MoveDown()
-	if m.cursor != 2 {
-		t.Errorf("Expected cursor at 2 after second MoveDown, got %d", m.cursor)
+	if m.Cursor() != 2 {
+		t.Errorf("Expected cursor at 2 after second MoveDown, got %d", m.Cursor())
 	}
 
 	// Move down at end (should stay)
 	m.MoveDown()
-	if m.cursor != 2 {
-		t.Errorf("Expected cursor to stay at 2, got %d", m.cursor)
+	if m.Cursor() != 2 {
+		t.Errorf("Expected cursor to stay at 2, got %d", m.Cursor())
 	}
 
 	// Move up
 	m.MoveUp()
-	if m.cursor != 1 {
-		t.Errorf("Expected cursor at 1 after MoveUp, got %d", m.cursor)
+	if m.Cursor() != 1 {
+		t.Errorf("Expected cursor at 1 after MoveUp, got %d", m.Cursor())
 	}
 
 	// Go to top
 	m.GoToTop()
-	if m.cursor != 0 {
-		t.Errorf("Expected cursor at 0 after GoToTop, got %d", m.cursor)
+	if m.Cursor() != 0 {
+		t.Errorf("Expected cursor at 0 after GoToTop, got %d", m.Cursor())
 	}
 
 	// Go to bottom
 	m.GoToBottom()
-	if m.cursor != 2 {
-		t.Errorf("Expected cursor at 2 after GoToBottom, got %d", m.cursor)
+	if m.Cursor() != 2 {
+		t.Errorf("Expected cursor at 2 after GoToBottom, got %d", m.Cursor())
 	}
 }
 
@@ -236,17 +236,17 @@ func TestSetFocused(t *testing.T) {
 
 	m := New(testStyles())
 
-	if m.focused {
+	if m.Focused() {
 		t.Error("Expected not focused initially")
 	}
 
 	m.SetFocused(true)
-	if !m.focused {
+	if !m.Focused() {
 		t.Error("Expected focused after SetFocused(true)")
 	}
 
 	m.SetFocused(false)
-	if m.focused {
+	if m.Focused() {
 		t.Error("Expected not focused after SetFocused(false)")
 	}
 }
@@ -258,11 +258,11 @@ func TestSetSize(t *testing.T) {
 
 	m.SetSize(100, 50)
 
-	if m.width != 100 {
-		t.Errorf("Expected width 100, got %d", m.width)
+	if m.Width() != 100 {
+		t.Errorf("Expected width 100, got %d", m.Width())
 	}
-	if m.height != 50 {
-		t.Errorf("Expected height 50, got %d", m.height)
+	if m.Height() != 50 {
+		t.Errorf("Expected height 50, got %d", m.Height())
 	}
 }
 
@@ -337,15 +337,15 @@ func TestPageNavigation(t *testing.T) {
 
 	// Page down
 	m.PageDown()
-	if m.cursor == 0 {
+	if m.Cursor() == 0 {
 		t.Error("PageDown should move cursor")
 	}
 
 	// Page up
 	m.PageUp()
 	// Should move back toward top
-	if m.cursor >= 10 {
-		t.Errorf("PageUp should move cursor back, got %d", m.cursor)
+	if m.Cursor() >= 10 {
+		t.Errorf("PageUp should move cursor back, got %d", m.Cursor())
 	}
 }
 
@@ -366,13 +366,13 @@ func TestGoToTopBottom(t *testing.T) {
 	m.SetEvents(events)
 
 	m.GoToBottom()
-	if m.cursor != 9 {
-		t.Errorf("GoToBottom should move to last item (9), got %d", m.cursor)
+	if m.Cursor() != 9 {
+		t.Errorf("GoToBottom should move to last item (9), got %d", m.Cursor())
 	}
 
 	m.GoToTop()
-	if m.cursor != 0 {
-		t.Errorf("GoToTop should move to first item (0), got %d", m.cursor)
+	if m.Cursor() != 0 {
+		t.Errorf("GoToTop should move to first item (0), got %d", m.Cursor())
 	}
 }
 

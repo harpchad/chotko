@@ -13,17 +13,20 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"golang.org/x/time/rate"
 )
 
 const maxResponseSize = 10 * 1024 * 1024 // 10MB max response size
 
 // Client is a Zabbix API client.
 type Client struct {
-	baseURL    string
-	httpClient *http.Client
-	tokenMu    sync.RWMutex
-	token      string // API token or session token
-	requestID  int64
+	baseURL     string
+	httpClient  *http.Client
+	tokenMu     sync.RWMutex
+	token       string // API token or session token
+	requestID   int64
+	rateLimiter *rate.Limiter
 }
 
 // Request represents a JSON-RPC request to the Zabbix API.
@@ -63,6 +66,14 @@ type ClientOption func(*Client)
 func WithTimeout(timeout time.Duration) ClientOption {
 	return func(c *Client) {
 		c.httpClient.Timeout = timeout
+	}
+}
+
+// WithRateLimit sets the maximum requests per second.
+// Default is no rate limiting. Recommended value is 10-20 for most Zabbix servers.
+func WithRateLimit(requestsPerSecond float64) ClientOption {
+	return func(c *Client) {
+		c.rateLimiter = rate.NewLimiter(rate.Limit(requestsPerSecond), 1)
 	}
 }
 
@@ -133,6 +144,13 @@ func (c *Client) callNoAuth(ctx context.Context, method string, params, result a
 
 // callWithAuth makes a JSON-RPC call to the Zabbix API with optional authentication.
 func (c *Client) callWithAuth(ctx context.Context, method string, params, result any, useAuth bool) error {
+	// Wait for rate limiter if configured
+	if c.rateLimiter != nil {
+		if err := c.rateLimiter.Wait(ctx); err != nil {
+			return fmt.Errorf("rate limiter: %w", err)
+		}
+	}
+
 	req := Request{
 		JSONRPC: "2.0",
 		Method:  method,
