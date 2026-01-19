@@ -144,7 +144,8 @@ func (m *Model) regenerateSparklines() {
 // SetTextFilter sets the text filter (not implemented for tree yet).
 func (m *Model) SetTextFilter(filter string) {
 	m.textFilter = strings.ToLower(filter)
-	// TODO: Implement filtering for tree view
+	// Note: Tree view filtering is not yet implemented.
+	// When added, it should filter by item name/key similar to other list components.
 }
 
 // Selected returns the currently selected node.

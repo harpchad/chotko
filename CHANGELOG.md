@@ -94,7 +94,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Row highlighting now displays consistently across all list components
 - Command bar no longer shows duplicate prompt characters
 
-## [0.3.0]
+## [0.3.0] - 2024-11-15
 
 ### Added
 

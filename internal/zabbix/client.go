@@ -15,6 +15,8 @@ import (
 	"time"
 )
 
+const maxResponseSize = 10 * 1024 * 1024 // 10MB max response size
+
 // Client is a Zabbix API client.
 type Client struct {
 	baseURL    string
@@ -26,10 +28,10 @@ type Client struct {
 
 // Request represents a JSON-RPC request to the Zabbix API.
 type Request struct {
-	JSONRPC string      `json:"jsonrpc"`
-	Method  string      `json:"method"`
-	Params  interface{} `json:"params"`
-	ID      int64       `json:"id"`
+	JSONRPC string `json:"jsonrpc"`
+	Method  string `json:"method"`
+	Params  any    `json:"params"`
+	ID      int64  `json:"id"`
 }
 
 // Response represents a JSON-RPC response from the Zabbix API.
@@ -120,17 +122,17 @@ func (c *Client) nextID() int64 {
 }
 
 // call makes a JSON-RPC call to the Zabbix API.
-func (c *Client) call(ctx context.Context, method string, params, result interface{}) error {
+func (c *Client) call(ctx context.Context, method string, params, result any) error {
 	return c.callWithAuth(ctx, method, params, result, true)
 }
 
 // callNoAuth makes a JSON-RPC call without authentication (for apiinfo.version, etc.)
-func (c *Client) callNoAuth(ctx context.Context, method string, params, result interface{}) error {
+func (c *Client) callNoAuth(ctx context.Context, method string, params, result any) error {
 	return c.callWithAuth(ctx, method, params, result, false)
 }
 
 // callWithAuth makes a JSON-RPC call to the Zabbix API with optional authentication.
-func (c *Client) callWithAuth(ctx context.Context, method string, params, result interface{}, useAuth bool) error {
+func (c *Client) callWithAuth(ctx context.Context, method string, params, result any, useAuth bool) error {
 	req := Request{
 		JSONRPC: "2.0",
 		Method:  method,
@@ -161,7 +163,7 @@ func (c *Client) callWithAuth(ctx context.Context, method string, params, result
 	}
 	defer func() { _ = resp.Body.Close() }()
 
-	respBody, err := io.ReadAll(resp.Body)
+	respBody, err := io.ReadAll(io.LimitReader(resp.Body, maxResponseSize))
 	if err != nil {
 		return fmt.Errorf("failed to read response: %w", err)
 	}

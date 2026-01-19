@@ -14,11 +14,11 @@ const (
 // TriggerGetParams defines parameters for trigger.get API call.
 type TriggerGetParams struct {
 	// Output fields to return
-	Output interface{} `json:"output,omitempty"`
+	Output any `json:"output,omitempty"`
 	// Select hosts
-	SelectHosts interface{} `json:"selectHosts,omitempty"`
+	SelectHosts any `json:"selectHosts,omitempty"`
 	// Select tags
-	SelectTags interface{} `json:"selectTags,omitempty"`
+	SelectTags any `json:"selectTags,omitempty"`
 	// Filter by trigger IDs
 	TriggerIDs []string `json:"triggerids,omitempty"`
 	// Filter by host IDs
@@ -38,7 +38,7 @@ type TriggerGetParams struct {
 	// Enable wildcard search
 	SearchWildcardsEnabled bool `json:"searchWildcardsEnabled,omitempty"`
 	// Filter parameters
-	Filter map[string]interface{} `json:"filter,omitempty"`
+	Filter map[string]any `json:"filter,omitempty"`
 }
 
 // DefaultTriggerGetParams returns default parameters for fetching triggers.

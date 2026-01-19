@@ -102,9 +102,33 @@ display:
   refresh_interval: 30  # seconds
   min_severity: 0       # 0=all, 1-5=filter
   theme: "nord"
+  window_title: true    # show alert counts in terminal title
+  emoji_title: true     # use emoji in title (disable for basic terminals)
+  title_min_severity: 0 # minimum severity to show in title
+
+graphs:
+  categories:           # item categories for Graphs tab
+    - "CPU"
+    - "Memory"
+    - "Disk"
+    - "Network"
+  history_hours: 24     # hours of history to fetch
+  max_items_per_host: 50 # limit items fetched per host
 ```
 
 **Precedence:** CLI flags > Environment variables > Config file
+
+### TLS Configuration
+
+For servers with self-signed or internal CA certificates:
+
+```yaml
+server:
+  url: "https://zabbix.example.com"
+  insecure_skip_verify: true  # Skip TLS certificate verification
+```
+
+**Warning:** Only use `insecure_skip_verify: true` for testing or when connecting to servers with self-signed certificates in trusted networks. This disables certificate validation and makes the connection vulnerable to man-in-the-middle attacks. For production use, configure proper CA certificates instead.
 
 ## Key Bindings
 
@@ -124,6 +148,8 @@ display:
 | `a` | Acknowledge selected alert |
 | `A` | Acknowledge with message |
 | `c` | Close alert (if trigger allows manual close) |
+| `i` | Ignore selected alert locally |
+| `I` | List all ignored alerts |
 | `t` | Edit triggers for selected host |
 | `m` | Edit macros for selected host |
 | `e` | Toggle host monitoring (Hosts tab) |
@@ -176,6 +202,7 @@ Built-in themes:
 - `catppuccin` - Soothing pastels
 - `tokyonight` - Cool blues and purples
 - `solarized` - Precision-balanced
+- `high-contrast` - WCAG AAA compliant for accessibility
 
 ### Custom Themes
 

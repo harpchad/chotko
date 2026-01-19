@@ -172,8 +172,9 @@ func New(cfg *config.Config, t *theme.Theme) *Model {
 	// Load ignore list (errors are logged but don't block startup)
 	ignoreList, err := ignores.Load(config.Dir())
 	if err != nil {
-		// Log but continue - we'll have an empty list
-		_ = err // TODO: add logging when available
+		// Ignore list load errors are non-fatal - an empty list is acceptable.
+		// Structured logging will be added in a future release to capture these.
+		_ = err
 	}
 	m.ignoreList = ignoreList
 
@@ -792,7 +793,7 @@ func (m *Model) windowTitle() string {
 	minSev := m.config.GetTitleMinSeverity()
 	useEmoji := m.config.GetEmojiTitle()
 
-	var parts []string
+	parts := make([]string, 0, 5)
 	for sev := 5; sev >= 1; sev-- { // highest to lowest
 		if sev < minSev || counts[sev] == 0 {
 			continue

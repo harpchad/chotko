@@ -1,4 +1,6 @@
-// Package format provides shared formatting utilities for values and units.
+// Package format provides shared formatting utilities for numeric values and strings.
+// It handles formatting of bytes (with binary prefixes), percentages, time durations,
+// generic numeric values with SI suffixes (K, M, G, T), and string truncation.
 package format
 
 import (
@@ -102,4 +104,16 @@ func YAxisValue(value float64, units string) string {
 	default:
 		return fmt.Sprintf("%.0f", value)
 	}
+}
+
+// Truncate truncates a string to maxLen characters with ellipsis.
+// If the string is shorter than maxLen, it is returned unchanged.
+func Truncate(s string, maxLen int) string {
+	if len(s) <= maxLen {
+		return s
+	}
+	if maxLen <= 3 {
+		return s[:maxLen]
+	}
+	return s[:maxLen-3] + "..."
 }
