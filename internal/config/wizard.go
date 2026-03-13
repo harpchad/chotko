@@ -82,7 +82,12 @@ func RunWizard() (*Config, error) {
 		cfg.Auth.Username = username
 
 		fmt.Print("Password: ")
-		passwordBytes, readErr := term.ReadPassword(int(os.Stdin.Fd()))
+		passwordFD := os.Stdin.Fd()
+		if passwordFD > ^uintptr(0)>>1 {
+			return nil, fmt.Errorf("stdin file descriptor out of range: %d", passwordFD)
+		}
+
+		passwordBytes, readErr := term.ReadPassword(int(passwordFD))
 		if readErr != nil {
 			return nil, fmt.Errorf("failed to read password: %w", readErr)
 		}

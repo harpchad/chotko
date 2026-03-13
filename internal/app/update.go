@@ -758,7 +758,7 @@ func (m *Model) showIgnoresModal() {
 
 	rules := m.ignoreList.Rules()
 	for i, rule := range rules {
-		sb.WriteString(fmt.Sprintf("%2d. %s / %s\n", i+1, rule.HostName, format.Truncate(rule.TriggerName, 40)))
+		_, _ = fmt.Fprintf(&sb, "%2d. %s / %s\n", i+1, rule.HostName, format.Truncate(rule.TriggerName, 40))
 	}
 
 	sb.WriteString("\nUse :unignore N to remove a rule.")
