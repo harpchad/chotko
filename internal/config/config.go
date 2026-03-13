@@ -35,6 +35,7 @@ type AuthConfig struct {
 type DisplayConfig struct {
 	RefreshInterval  int    `yaml:"refresh_interval"`
 	MinSeverity      int    `yaml:"min_severity"`
+	HideAcknowledged bool   `yaml:"hide_acknowledged,omitempty"`
 	Theme            string `yaml:"theme"`
 	WindowTitle      *bool  `yaml:"window_title,omitempty"`       // Enable window/tab title updates (default: true)
 	EmojiTitle       *bool  `yaml:"emoji_title,omitempty"`        // Use emoji in title (default: true), false for text

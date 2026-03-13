@@ -199,6 +199,27 @@ func TestModel_SetTextFilter(t *testing.T) {
 	}
 }
 
+func TestModel_SetHideAcknowledged(t *testing.T) {
+	t.Parallel()
+
+	m := New(testStyles())
+	m.SetProblems(testProblems())
+	m.SetHideAcknowledged(true)
+
+	total, filtered := m.ItemCount()
+	if total != 4 {
+		t.Errorf("ItemCount() total = %d, want 4", total)
+	}
+	if filtered != 4 {
+		t.Errorf("ItemCount() filtered = %d, want 4", filtered)
+	}
+	for i := 0; i < m.FilteredCount(); i++ {
+		if m.filtered[i].IsAcknowledged() {
+			t.Fatalf("filtered problem %q should not be acknowledged", m.filtered[i].EventID)
+		}
+	}
+}
+
 func TestModel_Selected(t *testing.T) {
 	t.Parallel()
 
