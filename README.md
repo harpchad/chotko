@@ -104,6 +104,9 @@ chotko --theme dracula
 
 # Show only high severity alerts
 chotko --min-severity 4
+
+# Hide acknowledged alerts
+chotko --hide-acknowledged
 ```
 
 ## Configuration
@@ -147,6 +150,7 @@ auth:
 display:
   refresh_interval: 30  # seconds
   min_severity: 0       # 0=all, 1-5=filter
+  hide_acknowledged: false
   theme: "nord"
   window_title: true    # show alert counts in terminal title
   emoji_title: true     # use emoji in title (disable for basic terminals)

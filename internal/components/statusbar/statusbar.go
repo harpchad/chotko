@@ -13,16 +13,17 @@ import (
 
 // Model represents the status bar component.
 type Model struct {
-	styles        *theme.Styles
-	width         int
-	counts        *zabbix.HostCounts
-	connected     bool
-	version       string
-	loading       bool
-	lastUpdate    string
-	minSeverity   int
-	textFilter    string
-	statusMessage string // Temporary status message (takes precedence over filter display)
+	styles           *theme.Styles
+	width            int
+	counts           *zabbix.HostCounts
+	connected        bool
+	version          string
+	loading          bool
+	lastUpdate       string
+	minSeverity      int
+	textFilter       string
+	hideAcknowledged bool
+	statusMessage    string // Temporary status message (takes precedence over filter display)
 }
 
 // New creates a new status bar model.
@@ -64,9 +65,10 @@ func (m *Model) SetLastUpdate(t string) {
 }
 
 // SetFilter sets the current filter state.
-func (m *Model) SetFilter(minSeverity int, textFilter string) {
+func (m *Model) SetFilter(minSeverity int, textFilter string, hideAcknowledged bool) {
 	m.minSeverity = minSeverity
 	m.textFilter = textFilter
+	m.hideAcknowledged = hideAcknowledged
 }
 
 // SetStatus sets a temporary status message displayed in the center.
@@ -77,7 +79,7 @@ func (m *Model) SetStatus(message string) {
 
 // HasActiveFilter returns true if any filter is active.
 func (m Model) HasActiveFilter() bool {
-	return m.minSeverity > 0 || m.textFilter != ""
+	return m.minSeverity > 0 || m.textFilter != "" || m.hideAcknowledged
 }
 
 // Init implements tea.Model.
@@ -118,6 +120,9 @@ func (m Model) View() string {
 		}
 		if m.textFilter != "" {
 			parts = append(parts, fmt.Sprintf("%q", m.textFilter))
+		}
+		if m.hideAcknowledged {
+			parts = append(parts, "unacked only")
 		}
 		filterText := "⚡ Filter: " + joinParts(parts, ", ")
 		center = m.styles.StatusFilter.Render(filterText)

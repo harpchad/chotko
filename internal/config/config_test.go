@@ -26,6 +26,9 @@ func TestDefaultConfig(t *testing.T) {
 	if cfg.Display.Theme != "nord" {
 		t.Errorf("expected theme 'nord', got %q", cfg.Display.Theme)
 	}
+	if cfg.Display.HideAcknowledged {
+		t.Error("expected hide acknowledged to default to false")
+	}
 }
 
 func TestDir(t *testing.T) {
@@ -109,6 +112,7 @@ auth:
 display:
   refresh_interval: 60
   min_severity: 3
+  hide_acknowledged: true
   theme: "dracula"
 `
 	if err := os.WriteFile(configPath, []byte(content), 0o600); err != nil {
@@ -131,6 +135,9 @@ display:
 	}
 	if cfg.Display.MinSeverity != 3 {
 		t.Errorf("Display.MinSeverity = %d, want 3", cfg.Display.MinSeverity)
+	}
+	if !cfg.Display.HideAcknowledged {
+		t.Error("Display.HideAcknowledged = false, want true")
 	}
 	if cfg.Display.Theme != "dracula" {
 		t.Errorf("Display.Theme = %q, want %q", cfg.Display.Theme, "dracula")
@@ -250,9 +257,10 @@ func TestSaveToFile(t *testing.T) {
 		Server: ServerConfig{URL: "https://zabbix.example.com"},
 		Auth:   AuthConfig{Token: "test-token"},
 		Display: DisplayConfig{
-			RefreshInterval: 45,
-			MinSeverity:     2,
-			Theme:           "gruvbox",
+			RefreshInterval:  45,
+			MinSeverity:      2,
+			HideAcknowledged: true,
+			Theme:            "gruvbox",
 		},
 	}
 
@@ -279,6 +287,9 @@ func TestSaveToFile(t *testing.T) {
 	}
 	if loaded.Display.RefreshInterval != cfg.Display.RefreshInterval {
 		t.Errorf("Display.RefreshInterval = %d, want %d", loaded.Display.RefreshInterval, cfg.Display.RefreshInterval)
+	}
+	if loaded.Display.HideAcknowledged != cfg.Display.HideAcknowledged {
+		t.Errorf("Display.HideAcknowledged = %v, want %v", loaded.Display.HideAcknowledged, cfg.Display.HideAcknowledged)
 	}
 }
 
