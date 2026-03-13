@@ -593,7 +593,7 @@ func (m Model) handleSeverityFilter(msg tea.KeyMsg) (tea.Model, tea.Cmd, bool) {
 		if severity, err := strconv.Atoi(msg.String()); err == nil {
 			m.minSeverity = severity
 			m.alertList.SetMinSeverity(severity)
-			m.statusBar.SetFilter(m.minSeverity, m.textFilter)
+			m.statusBar.SetFilter(m.minSeverity, m.textFilter, m.hideAcknowledged)
 		}
 	}
 	return m, nil, true
@@ -637,7 +637,7 @@ func (m Model) handleClearFilter() (tea.Model, tea.Cmd, bool) {
 	m.alertList.SetTextFilter("")
 	m.hostList.SetTextFilter("")
 	m.eventList.SetTextFilter("")
-	m.statusBar.SetFilter(0, "")
+	m.statusBar.SetFilter(0, "", m.hideAcknowledged)
 	return m, nil, true
 }
 
@@ -911,7 +911,7 @@ func (m Model) handleCommandInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			case TabEvents:
 				m.eventList.SetTextFilter(value)
 			}
-			m.statusBar.SetFilter(m.minSeverity, m.textFilter)
+			m.statusBar.SetFilter(m.minSeverity, m.textFilter, m.hideAcknowledged)
 		case command.ModeAckMessage:
 			if m.tabBar.Active() == TabAlerts && m.alertList.Selected() != nil {
 				return m, m.acknowledgeProblem(value)

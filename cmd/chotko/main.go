@@ -31,6 +31,7 @@ func main() {
 		themeName   string
 		refresh     int
 		minSeverity int
+		hideAcked   bool
 		showVersion bool
 		showHelp    bool
 	)
@@ -43,6 +44,7 @@ func main() {
 	flag.StringVar(&themeName, "theme", "", "Theme name")
 	flag.IntVarP(&refresh, "refresh", "r", 0, "Refresh interval in seconds")
 	flag.IntVar(&minSeverity, "min-severity", -1, "Minimum severity (0-5)")
+	flag.BoolVar(&hideAcked, "hide-acknowledged", false, "Hide acknowledged alerts")
 	flag.BoolVarP(&showVersion, "version", "v", false, "Show version")
 	flag.BoolVarP(&showHelp, "help", "h", false, "Show help")
 
@@ -100,6 +102,9 @@ func main() {
 	}
 	if minSeverity >= 0 {
 		cfg.Display.MinSeverity = minSeverity
+	}
+	if hideAcked {
+		cfg.Display.HideAcknowledged = true
 	}
 
 	// Validate configuration
@@ -172,10 +177,11 @@ Flags:
   -u, --user string       Username for auth (overrides config)
   -p, --password string   Password for auth (INSECURE: visible in ps, prefer CHOTKO_PASSWORD)
       --theme string      Theme name (default "nord")
-  -r, --refresh int       Refresh interval in seconds (default 30)
-      --min-severity int  Minimum severity to display (0-5)
-  -h, --help              Show this help
-  -v, --version           Show version
+	  -r, --refresh int       Refresh interval in seconds (default 30)
+	      --min-severity int  Minimum severity to display (0-5)
+	      --hide-acknowledged Hide acknowledged alerts
+	  -h, --help              Show this help
+	  -v, --version           Show version
 
 Environment Variables:
   CHOTKO_SERVER    Zabbix server URL
@@ -199,8 +205,11 @@ Examples:
   # Use specific theme
   chotko --theme dracula
 
-  # Show only high severity alerts
-  chotko --min-severity 4
+	  # Show only high severity alerts
+	  chotko --min-severity 4
+
+	  # Hide acknowledged alerts
+	  chotko --hide-acknowledged
 
 Available Themes:
   default, nord, dracula, gruvbox, catppuccin, tokyonight, solarized

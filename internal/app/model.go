@@ -89,11 +89,12 @@ type Model struct {
 	height int
 
 	// Current state
-	focused         Pane
-	mode            Mode
-	minSeverity     int
-	textFilter      string
-	refreshInterval time.Duration
+	focused          Pane
+	mode             Mode
+	minSeverity      int
+	textFilter       string
+	hideAcknowledged bool
+	refreshInterval  time.Duration
 
 	// Data
 	problems   []zabbix.Problem
@@ -157,16 +158,17 @@ func New(cfg *config.Config, t *theme.Theme) *Model {
 	styles := theme.NewStyles(t)
 
 	m := &Model{
-		config:          cfg,
-		theme:           t,
-		styles:          styles,
-		keys:            DefaultKeyMap(),
-		focused:         PaneList,
-		mode:            ModeNormal,
-		minSeverity:     cfg.Display.MinSeverity,
-		refreshInterval: time.Duration(cfg.Display.RefreshInterval) * time.Second,
-		ctx:             ctx,
-		cancel:          cancel,
+		config:           cfg,
+		theme:            t,
+		styles:           styles,
+		keys:             DefaultKeyMap(),
+		focused:          PaneList,
+		mode:             ModeNormal,
+		minSeverity:      cfg.Display.MinSeverity,
+		hideAcknowledged: cfg.Display.HideAcknowledged,
+		refreshInterval:  time.Duration(cfg.Display.RefreshInterval) * time.Second,
+		ctx:              ctx,
+		cancel:           cancel,
 	}
 
 	// Load ignore list (errors are logged but don't block startup)
@@ -194,6 +196,8 @@ func New(cfg *config.Config, t *theme.Theme) *Model {
 	if m.ignoreList != nil {
 		m.alertList.SetIgnoreChecker(m.ignoreList.IsIgnored)
 	}
+	m.alertList.SetHideAcknowledged(m.hideAcknowledged)
+	m.statusBar.SetFilter(m.minSeverity, m.textFilter, m.hideAcknowledged)
 
 	// Set initial focus to alerts list
 	m.alertList.SetFocused(true)

@@ -23,10 +23,12 @@ type Model struct {
 	filtered []zabbix.Problem
 
 	// Filter state
-	minSeverity    int
-	textFilter     string
-	ignoredCount   int         // Number of alerts hidden by ignore rules
-	severityCounts map[int]int // Cached counts by severity level
+	minSeverity      int
+	textFilter       string
+	hideAcknowledged bool
+	ignoredCount     int         // Number of alerts hidden by ignore rules
+	hiddenAckCount   int         // Number of acknowledged alerts hidden by filter
+	severityCounts   map[int]int // Cached counts by severity level
 
 	// Ignore checker function - returns true if hostID+triggerID should be hidden
 	isIgnored func(hostID, triggerID string) bool
@@ -63,6 +65,12 @@ func (m *Model) SetTextFilter(filter string) {
 	m.applyFilter()
 }
 
+// SetHideAcknowledged controls whether acknowledged alerts are hidden.
+func (m *Model) SetHideAcknowledged(hide bool) {
+	m.hideAcknowledged = hide
+	m.applyFilter()
+}
+
 // SetIgnoreChecker sets the function used to determine if an alert should be hidden.
 // The function takes hostID and triggerID and returns true if the alert should be ignored.
 func (m *Model) SetIgnoreChecker(fn func(hostID, triggerID string) bool) {
@@ -74,6 +82,7 @@ func (m *Model) SetIgnoreChecker(fn func(hostID, triggerID string) bool) {
 func (m *Model) applyFilter() {
 	m.filtered = nil
 	m.ignoredCount = 0
+	m.hiddenAckCount = 0
 	m.severityCounts = make(map[int]int)
 	for _, p := range m.problems {
 		// Check ignore list first - skip if host+trigger is ignored
@@ -94,6 +103,11 @@ func (m *Model) applyFilter() {
 				m.ignoredCount++
 				continue
 			}
+		}
+
+		if m.hideAcknowledged && p.IsAcknowledged() {
+			m.hiddenAckCount++
+			continue
 		}
 
 		if p.SeverityInt() < m.minSeverity {
@@ -141,7 +155,7 @@ func (m Model) SelectedIndex() int {
 // ItemCount returns the total and filtered problem counts.
 // Total excludes ignored alerts (they are not counted as real alerts).
 func (m Model) ItemCount() (total, filtered int) {
-	return len(m.problems) - m.ignoredCount, len(m.filtered)
+	return len(m.problems) - m.ignoredCount - m.hiddenAckCount, len(m.filtered)
 }
 
 // SeverityCounts returns a copy of the cached severity counts.
