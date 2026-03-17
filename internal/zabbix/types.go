@@ -80,6 +80,14 @@ type Host struct {
 	Triggers          []Trigger   `json:"triggers,omitempty"`
 }
 
+// Host interface type constants.
+const (
+	InterfaceTypeAgent = "1"
+	InterfaceTypeSNMP  = "2"
+	InterfaceTypeIPMI  = "3"
+	InterfaceTypeJMX   = "4"
+)
+
 // HostStatus constants.
 const (
 	HostStatusMonitored   = "0" // Host is monitored
@@ -257,47 +265,45 @@ func (h *Host) InMaintenance() bool {
 	return h.MaintenanceStatus == "1"
 }
 
-// IsAvailable returns the availability status based on all interfaces.
-// Zabbix interface.available values: 0=unknown, 1=available, 2=unavailable
-// Returns: 1=available (any interface OK), 2=unavailable (all interfaces down), 0=unknown (no data)
+// HasAvailabilityData returns true when the host has interface availability data.
+func (h *Host) HasAvailabilityData() bool {
+	return len(h.Interfaces) > 0
+}
+
+// IsAvailable returns the availability status based on host interfaces.
+// Zabbix interface.available values: 0=unknown, 1=available, 2=unavailable.
+// Returns: 1=available (any interface OK), 2=unavailable (all interfaces down), 0=unknown.
 func (h *Host) IsAvailable() int {
-	// First check interfaces - this is the most reliable method
-	// as it covers all interface types (agent, SNMP, IPMI, JMX)
-	if len(h.Interfaces) > 0 {
-		hasAvailable := false
-		hasUnavailable := false
-		hasUnknown := false
+	if !h.HasAvailabilityData() {
+		return 0
+	}
 
-		for _, iface := range h.Interfaces {
-			switch iface.Available {
-			case "1":
-				hasAvailable = true
-			case "2":
-				hasUnavailable = true
-			default:
-				hasUnknown = true
-			}
-		}
+	hasAvailable := false
+	hasUnavailable := false
+	hasUnknown := false
 
-		// If any interface is available, host is available
-		if hasAvailable {
-			return 1
-		}
-		// If any interface is unavailable (and none available), host is unavailable
-		if hasUnavailable {
-			return 2
-		}
-		// All interfaces are unknown
-		if hasUnknown {
-			return 0
+	for _, iface := range h.Interfaces {
+		switch iface.Available {
+		case "1":
+			hasAvailable = true
+		case "2":
+			hasUnavailable = true
+		default:
+			hasUnknown = true
 		}
 	}
 
-	// Fallback to active_available for hosts without interface data
-	// (shouldn't happen with proper selectInterfaces, but just in case)
-	// Returns 0 (unknown) if ActiveAvailable is empty or invalid
-	a, _ := strconv.Atoi(h.ActiveAvailable)
-	return a
+	if hasAvailable {
+		return 1
+	}
+	if hasUnavailable {
+		return 2
+	}
+	if hasUnknown {
+		return 0
+	}
+
+	return 0
 }
 
 // DisplayName returns the visible name or falls back to technical name.
@@ -361,23 +367,36 @@ func (p *Problem) ResolvedDurationString() string {
 
 // Item represents a Zabbix item (metric).
 type Item struct {
-	ItemID    string `json:"itemid"`
-	HostID    string `json:"hostid"`
-	Name      string `json:"name"`
-	Key       string `json:"key_"`
-	ValueType string `json:"value_type"` // 0=float, 3=unsigned int (numeric)
-	Units     string `json:"units"`
-	LastValue string `json:"lastvalue"`
-	LastClock string `json:"lastclock"`
-	State     string `json:"state"`  // 0=normal, 1=not supported
-	Status    string `json:"status"` // 0=enabled, 1=disabled
-	Hosts     []Host `json:"hosts,omitempty"`
+	ItemID      string `json:"itemid"`
+	HostID      string `json:"hostid"`
+	InterfaceID string `json:"interfaceid,omitempty"`
+	Type        string `json:"type,omitempty"`
+	Name        string `json:"name"`
+	Key         string `json:"key_"`
+	ValueType   string `json:"value_type"` // 0=float, 3=unsigned int (numeric)
+	Units       string `json:"units"`
+	LastValue   string `json:"lastvalue"`
+	LastClock   string `json:"lastclock"`
+	State       string `json:"state"`  // 0=normal, 1=not supported
+	Status      string `json:"status"` // 0=enabled, 1=disabled
+	Hosts       []Host `json:"hosts,omitempty"`
 }
 
 // ItemValueType constants for numeric items.
 const (
 	ItemValueTypeFloat    = "0" // Numeric (float)
 	ItemValueTypeUnsigned = "3" // Numeric (unsigned)
+)
+
+// Item type constants relevant to host availability.
+const (
+	ItemTypeZabbixAgent       = "0"
+	ItemTypeSNMPv1Agent       = "1"
+	ItemTypeSNMPv2Agent       = "4"
+	ItemTypeZabbixAgentActive = "7"
+	ItemTypeIPMIAgent         = "12"
+	ItemTypeJMXAgent          = "16"
+	ItemTypeSNMPv3Agent       = "17"
 )
 
 // History represents a single history data point.

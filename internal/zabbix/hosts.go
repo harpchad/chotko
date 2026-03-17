@@ -3,6 +3,7 @@ package zabbix
 import (
 	"context"
 	"fmt"
+	"strconv"
 )
 
 // HostGetParams defines parameters for host.get API call.
@@ -64,23 +65,225 @@ func (c *Client) GetAllHosts(ctx context.Context) ([]Host, error) {
 	return c.GetHosts(ctx, params)
 }
 
-// CalculateHostCounts calculates host status counts from a pre-fetched host list.
-// Use this when you already have hosts to avoid redundant API calls.
-func CalculateHostCounts(hosts []Host) *HostCounts {
-	counts := &HostCounts{
-		Total: len(hosts),
+// GetAvailabilityItems retrieves monitored items that can affect host availability.
+func (c *Client) GetAvailabilityItems(ctx context.Context, hostIDs []string) ([]Item, error) {
+	params := ItemGetParams{
+		Output:    []string{"itemid", "hostid", "interfaceid", "type", "status"},
+		HostIDs:   hostIDs,
+		Monitored: true,
 	}
 
+	items, err := c.GetItems(ctx, params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get availability items: %w", err)
+	}
+
+	return items, nil
+}
+
+type hostAvailabilitySupport struct {
+	passiveTypes map[string]struct{}
+	active       bool
+}
+
+func passiveItemInterfaceType(itemType string) (string, bool) {
+	switch itemType {
+	case ItemTypeZabbixAgent:
+		return InterfaceTypeAgent, true
+	case ItemTypeSNMPv1Agent, ItemTypeSNMPv2Agent, ItemTypeSNMPv3Agent:
+		return InterfaceTypeSNMP, true
+	case ItemTypeIPMIAgent:
+		return InterfaceTypeIPMI, true
+	case ItemTypeJMXAgent:
+		return InterfaceTypeJMX, true
+	default:
+		return "", false
+	}
+}
+
+func collectHostAvailabilitySupport(items []Item) map[string]hostAvailabilitySupport {
+	supportByHost := make(map[string]hostAvailabilitySupport)
+
+	for _, item := range items {
+		support := supportByHost[item.HostID]
+		if support.passiveTypes == nil {
+			support.passiveTypes = make(map[string]struct{})
+		}
+
+		if item.Type == ItemTypeZabbixAgentActive {
+			support.active = true
+			supportByHost[item.HostID] = support
+			continue
+		}
+
+		ifaceType, ok := passiveItemInterfaceType(item.Type)
+		if !ok || item.InterfaceID == "" || item.InterfaceID == "0" {
+			continue
+		}
+
+		support.passiveTypes[ifaceType] = struct{}{}
+		supportByHost[item.HostID] = support
+	}
+
+	return supportByHost
+}
+
+func availabilityStatusForInterfaces(interfaces []Interface) (int, bool) {
+	if len(interfaces) == 0 {
+		return 0, false
+	}
+
+	hasAvailable := false
+	hasUnavailable := false
+	hasUnknown := false
+
+	for _, iface := range interfaces {
+		switch iface.Available {
+		case "1":
+			hasAvailable = true
+		case "2":
+			hasUnavailable = true
+		default:
+			hasUnknown = true
+		}
+	}
+
+	if hasAvailable {
+		return 1, true
+	}
+	if hasUnavailable {
+		return 2, true
+	}
+	if hasUnknown {
+		return 0, true
+	}
+
+	return 0, true
+}
+
+func activeAvailabilityStatus(host Host) (int, bool) {
+	if host.ActiveAvailable == "" {
+		return 0, false
+	}
+
+	status, err := strconv.Atoi(host.ActiveAvailable)
+	if err != nil {
+		return 0, false
+	}
+
+	return status, true
+}
+
+func hostAvailabilityStatus(host Host, support hostAvailabilitySupport) (int, bool) {
+	statuses := make([]int, 0, len(support.passiveTypes)+1)
+
+	for ifaceType := range support.passiveTypes {
+		interfaces := make([]Interface, 0, len(host.Interfaces))
+		for _, iface := range host.Interfaces {
+			if iface.Type == ifaceType {
+				interfaces = append(interfaces, iface)
+			}
+		}
+
+		status, ok := availabilityStatusForInterfaces(interfaces)
+		if ok {
+			statuses = append(statuses, status)
+		}
+	}
+
+	if support.active {
+		status, ok := activeAvailabilityStatus(host)
+		if ok {
+			statuses = append(statuses, status)
+		}
+	}
+
+	if len(statuses) == 0 {
+		return 0, false
+	}
+
+	hasAvailable := false
+	hasUnavailable := false
+	hasUnknown := false
+
+	for _, status := range statuses {
+		switch status {
+		case 1:
+			hasAvailable = true
+		case 2:
+			hasUnavailable = true
+		default:
+			hasUnknown = true
+		}
+	}
+
+	if hasAvailable {
+		return 1, true
+	}
+	if hasUnavailable {
+		return 2, true
+	}
+	if hasUnknown {
+		return 0, true
+	}
+
+	return 0, false
+}
+
+// CalculateHostCountsWithItems calculates host status counts using monitored items
+// to exclude hosts that do not participate in host availability.
+func CalculateHostCountsWithItems(hosts []Host, items []Item) *HostCounts {
+	counts := &HostCounts{}
+	supportByHost := collectHostAvailabilitySupport(items)
+
 	for _, h := range hosts {
+		support, ok := supportByHost[h.HostID]
+		if !ok {
+			continue
+		}
+
+		status, ok := hostAvailabilityStatus(h, support)
+		if !ok {
+			continue
+		}
+
+		counts.Total++
+
 		if h.InMaintenance() {
 			counts.Maintenance++
 			continue
 		}
 
-		// active_available values in Zabbix 7.x:
-		// 0 = Unknown (no active agent data yet)
-		// 1 = Available
-		// 2 = Unavailable (agent not responding)
+		switch status {
+		case 1:
+			counts.OK++
+		case 2:
+			counts.Problem++
+		default:
+			counts.Unknown++
+		}
+	}
+
+	return counts
+}
+
+// CalculateHostCounts calculates host status counts from a pre-fetched host list.
+// Use this when you already have hosts to avoid redundant API calls.
+func CalculateHostCounts(hosts []Host) *HostCounts {
+	counts := &HostCounts{}
+
+	for _, h := range hosts {
+		if !h.HasAvailabilityData() {
+			continue
+		}
+
+		counts.Total++
+
+		if h.InMaintenance() {
+			counts.Maintenance++
+			continue
+		}
+
 		switch h.IsAvailable() {
 		case 1: // Available
 			counts.OK++
@@ -104,7 +307,17 @@ func (c *Client) GetHostCounts(ctx context.Context) (*HostCounts, error) {
 		return nil, err
 	}
 
-	return CalculateHostCounts(hosts), nil
+	hostIDs := make([]string, 0, len(hosts))
+	for _, host := range hosts {
+		hostIDs = append(hostIDs, host.HostID)
+	}
+
+	items, err := c.GetAvailabilityItems(ctx, hostIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	return CalculateHostCountsWithItems(hosts, items), nil
 }
 
 // GetHost retrieves a single host by ID.

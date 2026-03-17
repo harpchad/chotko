@@ -143,13 +143,7 @@ func (m Model) handleProblemsLoadedMsg(msg ProblemsLoadedMsg) (tea.Model, tea.Cm
 	}
 
 	m.problems = msg.Problems
-	m.alertList.SetProblems(msg.Problems)
-
-	if m.tabBar.Active() == TabAlerts {
-		if selected := m.alertList.Selected(); selected != nil {
-			m.detailPane.SetProblem(selected)
-		}
-	}
+	m.setProblems(msg.Problems)
 	return m, m.updateWindowTitle()
 }
 
@@ -169,8 +163,10 @@ func (m Model) handleHostsLoadedMsg(msg HostsLoadedMsg) (tea.Model, tea.Cmd) {
 	m.hosts = msg.Hosts
 	m.hostList.SetHosts(msg.Hosts)
 
-	// Calculate host counts from the loaded hosts to avoid redundant API calls
-	counts := zabbix.CalculateHostCounts(msg.Hosts)
+	counts := msg.Counts
+	if counts == nil {
+		counts = zabbix.CalculateHostCounts(msg.Hosts)
+	}
 	m.hostCounts = counts
 	m.statusBar.SetCounts(counts)
 
@@ -267,7 +263,9 @@ func (m Model) handleAcknowledgeResultMsg(msg AcknowledgeResultMsg) (tea.Model, 
 		m.errorModal.ShowError("Acknowledge Failed", "Could not acknowledge problem", msg.Err)
 		return m, nil
 	}
-	return m, m.loadProblems()
+	m.statusBar.SetStatus("Problem acknowledged")
+	m.acknowledgeProblemLocally(msg.EventID)
+	return m, tea.Batch(m.updateWindowTitle(), m.loadProblems())
 }
 
 // handleCloseResultMsg handles close result.
@@ -278,7 +276,8 @@ func (m Model) handleCloseResultMsg(msg CloseResultMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 	m.statusBar.SetStatus("Problem closed")
-	return m, m.loadProblems()
+	m.removeProblemLocally(msg.EventID)
+	return m, tea.Batch(m.updateWindowTitle(), m.loadProblems())
 }
 
 // handleRefreshTickMsg handles periodic refresh.

@@ -292,10 +292,9 @@ func TestHost_InMaintenance(t *testing.T) {
 
 func TestHost_IsAvailable(t *testing.T) {
 	tests := []struct {
-		name            string
-		activeAvailable string
-		interfaces      []Interface
-		want            int
+		name       string
+		interfaces []Interface
+		want       int
 	}{
 		// Interface-based availability (takes precedence)
 		{
@@ -328,36 +327,21 @@ func TestHost_IsAvailable(t *testing.T) {
 			interfaces: []Interface{{Available: "0"}, {Available: "0"}},
 			want:       0,
 		},
-		// Fallback to activeAvailable when no interfaces
 		{
-			name:            "no interfaces - fallback unknown",
-			activeAvailable: "0",
-			interfaces:      []Interface{},
-			want:            0,
+			name:       "no interfaces returns unknown",
+			interfaces: []Interface{},
+			want:       0,
 		},
 		{
-			name:            "no interfaces - fallback available",
-			activeAvailable: "1",
-			interfaces:      []Interface{},
-			want:            1,
-		},
-		{
-			name:            "no interfaces - fallback unavailable",
-			activeAvailable: "2",
-			interfaces:      []Interface{},
-			want:            2,
-		},
-		{
-			name:            "nil interfaces - fallback",
-			activeAvailable: "1",
-			interfaces:      nil,
-			want:            1,
+			name:       "nil interfaces returns unknown",
+			interfaces: nil,
+			want:       0,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			h := Host{ActiveAvailable: tt.activeAvailable, Interfaces: tt.interfaces}
+			h := Host{Interfaces: tt.interfaces}
 			if got := h.IsAvailable(); got != tt.want {
 				t.Errorf("IsAvailable() = %d, want %d", got, tt.want)
 			}

@@ -115,22 +115,29 @@ func TestClient_GetAllHosts(t *testing.T) {
 }
 
 func TestClient_GetHostCounts(t *testing.T) {
-	// Test the critical availability mapping:
-	// 0 = Unknown
-	// 1 = Available (OK)
-	// 2 = Unavailable (Problem)
 	server := newMockServer(t, map[string]mockResponse{
 		"host.get": {
 			Result: []Host{
-				// Available hosts (active_available = "1")
-				{HostID: "1", Status: "0", MaintenanceStatus: "0", ActiveAvailable: "1"},
-				{HostID: "2", Status: "0", MaintenanceStatus: "0", ActiveAvailable: "1"},
-				// Unavailable host (active_available = "2")
-				{HostID: "3", Status: "0", MaintenanceStatus: "0", ActiveAvailable: "2"},
-				// Unknown host (active_available = "0")
-				{HostID: "4", Status: "0", MaintenanceStatus: "0", ActiveAvailable: "0"},
+				// Available hosts
+				{HostID: "1", Status: "0", MaintenanceStatus: "0", Interfaces: []Interface{{InterfaceID: "11", Type: InterfaceTypeAgent, Available: "1"}}},
+				{HostID: "2", Status: "0", MaintenanceStatus: "0", Interfaces: []Interface{{InterfaceID: "21", Type: InterfaceTypeAgent, Available: "1"}}},
+				// Unavailable host
+				{HostID: "3", Status: "0", MaintenanceStatus: "0", Interfaces: []Interface{{InterfaceID: "31", Type: InterfaceTypeAgent, Available: "2"}}},
+				// Unknown host
+				{HostID: "4", Status: "0", MaintenanceStatus: "0", Interfaces: []Interface{{InterfaceID: "41", Type: InterfaceTypeAgent, Available: "0"}}},
 				// Maintenance host
-				{HostID: "5", Status: "0", MaintenanceStatus: "1", ActiveAvailable: "1"},
+				{HostID: "5", Status: "0", MaintenanceStatus: "1", Interfaces: []Interface{{InterfaceID: "51", Type: InterfaceTypeAgent, Available: "1"}}},
+				// Host without interfaces should not affect availability counts
+				{HostID: "6", Status: "0", MaintenanceStatus: "0"},
+			},
+		},
+		"item.get": {
+			Result: []Item{
+				{ItemID: "101", HostID: "1", InterfaceID: "11", Type: ItemTypeZabbixAgent},
+				{ItemID: "102", HostID: "2", InterfaceID: "21", Type: ItemTypeZabbixAgent},
+				{ItemID: "103", HostID: "3", InterfaceID: "31", Type: ItemTypeZabbixAgent},
+				{ItemID: "104", HostID: "4", InterfaceID: "41", Type: ItemTypeZabbixAgent},
+				{ItemID: "105", HostID: "5", InterfaceID: "51", Type: ItemTypeZabbixAgent},
 			},
 		},
 	})
@@ -144,18 +151,17 @@ func TestClient_GetHostCounts(t *testing.T) {
 		t.Fatalf("GetHostCounts() error = %v", err)
 	}
 
-	// Verify counts based on availability mapping
-	// OK = Available (active_available = "1") and not in maintenance = 2
+	// OK = Available and not in maintenance = 2
 	if counts.OK != 2 {
 		t.Errorf("counts.OK = %d, want 2", counts.OK)
 	}
 
-	// Problem = Unavailable (active_available = "2") = 1
+	// Problem = Unavailable = 1
 	if counts.Problem != 1 {
 		t.Errorf("counts.Problem = %d, want 1", counts.Problem)
 	}
 
-	// Unknown = active_available = "0" = 1
+	// Unknown = explicit interface unknown = 1
 	if counts.Unknown != 1 {
 		t.Errorf("counts.Unknown = %d, want 1", counts.Unknown)
 	}
@@ -165,7 +171,7 @@ func TestClient_GetHostCounts(t *testing.T) {
 		t.Errorf("counts.Maintenance = %d, want 1", counts.Maintenance)
 	}
 
-	// Total = 5
+	// Total excludes hosts without interface availability data = 5
 	if counts.Total != 5 {
 		t.Errorf("counts.Total = %d, want 5", counts.Total)
 	}
@@ -174,6 +180,7 @@ func TestClient_GetHostCounts(t *testing.T) {
 func TestClient_GetHostCounts_Empty(t *testing.T) {
 	server := newMockServer(t, map[string]mockResponse{
 		"host.get": {Result: []Host{}},
+		"item.get": {Result: []Item{}},
 	})
 	defer server.Close()
 
@@ -187,6 +194,41 @@ func TestClient_GetHostCounts_Empty(t *testing.T) {
 
 	if counts.Total != 0 {
 		t.Errorf("counts.Total = %d, want 0", counts.Total)
+	}
+}
+
+func TestCalculateHostCountsWithItems_ExcludesHostsWithoutAvailabilityItems(t *testing.T) {
+	hosts := []Host{
+		{HostID: "1", MaintenanceStatus: "0", Interfaces: []Interface{{InterfaceID: "11", Type: InterfaceTypeAgent, Available: "1"}}},
+		{HostID: "2", MaintenanceStatus: "0", Interfaces: []Interface{{InterfaceID: "21", Type: InterfaceTypeAgent, Available: "0"}}},
+	}
+
+	items := []Item{{ItemID: "101", HostID: "1", InterfaceID: "11", Type: ItemTypeZabbixAgent}}
+
+	counts := CalculateHostCountsWithItems(hosts, items)
+
+	if counts.OK != 1 {
+		t.Errorf("counts.OK = %d, want 1", counts.OK)
+	}
+	if counts.Unknown != 0 {
+		t.Errorf("counts.Unknown = %d, want 0", counts.Unknown)
+	}
+	if counts.Total != 1 {
+		t.Errorf("counts.Total = %d, want 1", counts.Total)
+	}
+}
+
+func TestCalculateHostCountsWithItems_UsesActiveAvailability(t *testing.T) {
+	hosts := []Host{{HostID: "1", MaintenanceStatus: "0", ActiveAvailable: "1"}}
+	items := []Item{{ItemID: "101", HostID: "1", Type: ItemTypeZabbixAgentActive}}
+
+	counts := CalculateHostCountsWithItems(hosts, items)
+
+	if counts.OK != 1 {
+		t.Errorf("counts.OK = %d, want 1", counts.OK)
+	}
+	if counts.Total != 1 {
+		t.Errorf("counts.Total = %d, want 1", counts.Total)
 	}
 }
 
