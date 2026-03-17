@@ -4,7 +4,9 @@ import (
 	"testing"
 
 	"github.com/harpchad/chotko/internal/config"
+	"github.com/harpchad/chotko/internal/ignores"
 	"github.com/harpchad/chotko/internal/theme"
+	"github.com/harpchad/chotko/internal/zabbix"
 )
 
 // testConfig returns a minimal config for testing.
@@ -136,5 +138,130 @@ func TestRefreshTickMsg_AlreadyLoading(t *testing.T) {
 	// Command should still be returned (to keep the timer running)
 	if cmd == nil {
 		t.Error("RefreshTickMsg should always return a command for the next tick")
+	}
+}
+
+func TestGetAlertCountsBySeverity_HideAcknowledgedAndIgnored(t *testing.T) {
+	t.Parallel()
+
+	cfg := testConfig()
+	cfg.Display.HideAcknowledged = true
+	thm := theme.DefaultTheme()
+	m := New(cfg, thm)
+	ignoreList, err := ignores.Load(t.TempDir())
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+	m.ignoreList = ignoreList
+
+	if err := m.ignoreList.Add(ignores.Rule{HostID: "host-2", TriggerID: "trigger-2"}); err != nil {
+		t.Fatalf("Add() error = %v", err)
+	}
+
+	m.problems = []zabbix.Problem{
+		{EventID: "1", Severity: "4", Acknowledged: "0", Object: ObjectTypeTrigger, ObjectID: "trigger-1", Hosts: []zabbix.Host{{HostID: "host-1"}}},
+		{EventID: "2", Severity: "4", Acknowledged: "1", Object: ObjectTypeTrigger, ObjectID: "trigger-ack", Hosts: []zabbix.Host{{HostID: "host-ack"}}},
+		{EventID: "3", Severity: "3", Acknowledged: "0", Object: ObjectTypeTrigger, ObjectID: "trigger-2", Hosts: []zabbix.Host{{HostID: "host-2"}}},
+		{EventID: "4", Severity: "2", Acknowledged: "0", Object: ObjectTypeTrigger, ObjectID: "trigger-3", Hosts: []zabbix.Host{{HostID: "host-3"}}},
+	}
+
+	counts := m.getAlertCountsBySeverity()
+
+	if counts[4] != 1 {
+		t.Fatalf("counts[4] = %d, want 1", counts[4])
+	}
+	if counts[3] != 0 {
+		t.Fatalf("counts[3] = %d, want 0", counts[3])
+	}
+	if counts[2] != 1 {
+		t.Fatalf("counts[2] = %d, want 1", counts[2])
+	}
+}
+
+func TestWindowTitle_ExcludesHiddenAcknowledgedAlerts(t *testing.T) {
+	t.Parallel()
+
+	emojiTitle := false
+	cfg := testConfig()
+	cfg.Display.HideAcknowledged = true
+	cfg.Display.EmojiTitle = &emojiTitle
+	thm := theme.DefaultTheme()
+	m := New(cfg, thm)
+	m.connected = true
+	m.problems = []zabbix.Problem{
+		{EventID: "1", Severity: "4", Acknowledged: "0"},
+		{EventID: "2", Severity: "4", Acknowledged: "1"},
+		{EventID: "3", Severity: "2", Acknowledged: "0"},
+	}
+
+	got := m.windowTitle()
+	want := "chotko: [H:1 W:1]"
+	if got != want {
+		t.Fatalf("windowTitle() = %q, want %q", got, want)
+	}
+}
+
+func TestHandleAcknowledgeResultMsg_UpdatesLocalStateBeforeReload(t *testing.T) {
+	t.Parallel()
+
+	emojiTitle := false
+	cfg := testConfig()
+	cfg.Display.HideAcknowledged = true
+	cfg.Display.EmojiTitle = &emojiTitle
+	thm := theme.DefaultTheme()
+	m := New(cfg, thm)
+	m.connected = true
+	m.problems = []zabbix.Problem{{EventID: "1", Severity: "4", Acknowledged: "0", Name: "CPU high"}}
+	m.alertList.SetProblems(m.problems)
+
+	newModel, cmd := m.handleAcknowledgeResultMsg(AcknowledgeResultMsg{EventID: "1", Success: true})
+	updated, ok := newModel.(Model)
+	if !ok {
+		t.Fatalf("expected Model type, got %T", newModel)
+	}
+
+	if cmd == nil {
+		t.Fatal("handleAcknowledgeResultMsg() returned nil command")
+	}
+	if !updated.problems[0].IsAcknowledged() {
+		t.Fatal("problem should be acknowledged locally before reload")
+	}
+	if selected := updated.alertList.Selected(); selected != nil {
+		t.Fatalf("Selected() = %+v, want nil after hiding acknowledged alert", selected)
+	}
+	if got, want := updated.windowTitle(), "chotko: OK"; got != want {
+		t.Fatalf("windowTitle() = %q, want %q", got, want)
+	}
+}
+
+func TestHandleCloseResultMsg_UpdatesLocalStateBeforeReload(t *testing.T) {
+	t.Parallel()
+
+	emojiTitle := false
+	cfg := testConfig()
+	cfg.Display.EmojiTitle = &emojiTitle
+	thm := theme.DefaultTheme()
+	m := New(cfg, thm)
+	m.connected = true
+	m.problems = []zabbix.Problem{{EventID: "1", Severity: "4", Name: "CPU high"}}
+	m.alertList.SetProblems(m.problems)
+
+	newModel, cmd := m.handleCloseResultMsg(CloseResultMsg{EventID: "1", Success: true})
+	updated, ok := newModel.(Model)
+	if !ok {
+		t.Fatalf("expected Model type, got %T", newModel)
+	}
+
+	if cmd == nil {
+		t.Fatal("handleCloseResultMsg() returned nil command")
+	}
+	if len(updated.problems) != 0 {
+		t.Fatalf("len(problems) = %d, want 0", len(updated.problems))
+	}
+	if selected := updated.alertList.Selected(); selected != nil {
+		t.Fatalf("Selected() = %+v, want nil after close", selected)
+	}
+	if got, want := updated.windowTitle(), "chotko: OK"; got != want {
+		t.Fatalf("windowTitle() = %q, want %q", got, want)
 	}
 }

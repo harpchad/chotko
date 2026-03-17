@@ -4,6 +4,7 @@ package detail
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/NimbleMarkets/ntcharts/linechart"
 	tslc "github.com/NimbleMarkets/ntcharts/linechart/timeserieslinechart"
@@ -602,13 +603,13 @@ func (m Model) viewGraph() string {
 			}
 
 			chart := tslc.New(chartWidth, chartHeight,
-				tslc.WithXLabelFormatter(tslc.HourTimeLabelFormatter()),
+				tslc.WithXLabelFormatter(localHourTimeLabelFormatter()),
 				tslc.WithYLabelFormatter(humanReadableYLabelFormatter(item.Units)),
 			)
 
 			// Push history data points
 			for _, h := range m.history {
-				t := h.Time()
+				t := h.Time().Local()
 				if !t.IsZero() {
 					chart.Push(tslc.TimePoint{Time: t, Value: h.ValueFloat()})
 				}
@@ -623,8 +624,8 @@ func (m Model) viewGraph() string {
 
 			// Add time range info
 			if len(m.history) > 0 {
-				first := m.history[0].Time()
-				last := m.history[len(m.history)-1].Time()
+				first := m.history[0].Time().Local()
+				last := m.history[len(m.history)-1].Time().Local()
 				timeRange := fmt.Sprintf("%s - %s", first.Format("15:04"), last.Format("15:04"))
 				lines = append(lines, m.styles.Subtle.Render(timeRange))
 			}
@@ -681,5 +682,12 @@ func calcStats(history []zabbix.History) (minVal, maxVal, avgVal float64) {
 func humanReadableYLabelFormatter(units string) linechart.LabelFormatter {
 	return func(_ int, v float64) string {
 		return format.YAxisValue(v, units)
+	}
+}
+
+// localHourTimeLabelFormatter formats X axis labels in local time.
+func localHourTimeLabelFormatter() linechart.LabelFormatter {
+	return func(_ int, v float64) string {
+		return time.Unix(int64(v), 0).Local().Format("15:04")
 	}
 }

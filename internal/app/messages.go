@@ -20,8 +20,9 @@ type HostCountsLoadedMsg struct {
 
 // HostsLoadedMsg is sent when hosts are loaded from Zabbix.
 type HostsLoadedMsg struct {
-	Hosts []zabbix.Host
-	Err   error
+	Hosts  []zabbix.Host
+	Counts *zabbix.HostCounts
+	Err    error
 }
 
 // EventsLoadedMsg is sent when events are loaded from Zabbix.

@@ -325,9 +325,24 @@ func (m *Model) loadHosts() tea.Cmd {
 		}
 
 		fetchedHosts, err := client.GetAllHosts(ctx)
+		if err != nil {
+			return HostsLoadedMsg{Err: err}
+		}
+
+		hostIDs := make([]string, 0, len(fetchedHosts))
+		for _, host := range fetchedHosts {
+			hostIDs = append(hostIDs, host.HostID)
+		}
+
+		availabilityItems, err := client.GetAvailabilityItems(ctx, hostIDs)
+		if err != nil {
+			return HostsLoadedMsg{Err: err}
+		}
+
 		return HostsLoadedMsg{
-			Hosts: fetchedHosts,
-			Err:   err,
+			Hosts:  fetchedHosts,
+			Counts: zabbix.CalculateHostCountsWithItems(fetchedHosts, availabilityItems),
+			Err:    nil,
 		}
 	}
 }
@@ -765,31 +780,77 @@ var (
 	}
 )
 
+// shouldCountProblemInAlertSummary returns whether a problem should be included
+// in alert summary counts such as the window title.
+func (m *Model) shouldCountProblemInAlertSummary(p zabbix.Problem) bool {
+	if m.hideAcknowledged && p.IsAcknowledged() {
+		return false
+	}
+
+	if m.ignoreList == nil {
+		return true
+	}
+
+	hostID := ""
+	triggerID := ""
+	if len(p.Hosts) > 0 {
+		hostID = p.Hosts[0].HostID
+	}
+	if p.Object == ObjectTypeTrigger {
+		triggerID = p.ObjectID
+	}
+	if triggerID == "" && p.RelatedObject.TriggerID != "" {
+		triggerID = p.RelatedObject.TriggerID
+	}
+
+	return hostID == "" || triggerID == "" || !m.ignoreList.IsIgnored(hostID, triggerID)
+}
+
 // getAlertCountsBySeverity returns a map of severity level to alert count.
-// Only counts problems that are not ignored.
+// Counts exclude locally ignored alerts and acknowledged alerts when hidden.
 func (m *Model) getAlertCountsBySeverity() map[int]int {
 	counts := make(map[int]int)
 	for _, p := range m.problems {
-		// Skip ignored alerts
-		if m.ignoreList != nil {
-			hostID := ""
-			triggerID := ""
-			if len(p.Hosts) > 0 {
-				hostID = p.Hosts[0].HostID
-			}
-			if p.Object == ObjectTypeTrigger {
-				triggerID = p.ObjectID
-			}
-			if triggerID == "" && p.RelatedObject.TriggerID != "" {
-				triggerID = p.RelatedObject.TriggerID
-			}
-			if hostID != "" && triggerID != "" && m.ignoreList.IsIgnored(hostID, triggerID) {
-				continue
-			}
+		if !m.shouldCountProblemInAlertSummary(p) {
+			continue
 		}
 		counts[p.SeverityInt()]++
 	}
 	return counts
+}
+
+// setProblems updates the alerts data and refreshes dependent UI state.
+func (m *Model) setProblems(problems []zabbix.Problem) {
+	m.problems = problems
+	m.alertList.SetProblems(problems)
+
+	if m.tabBar.Active() == TabAlerts {
+		m.updateDetailForCurrentTab()
+	}
+}
+
+// acknowledgeProblemLocally marks the matching problem as acknowledged.
+func (m *Model) acknowledgeProblemLocally(eventID string) {
+	for i := range m.problems {
+		if m.problems[i].EventID == eventID {
+			m.problems[i].Acknowledged = "1"
+			break
+		}
+	}
+
+	m.setProblems(m.problems)
+}
+
+// removeProblemLocally removes the matching problem from the local cache.
+func (m *Model) removeProblemLocally(eventID string) {
+	for i := range m.problems {
+		if m.problems[i].EventID == eventID {
+			m.problems = append(m.problems[:i], m.problems[i+1:]...)
+			break
+		}
+	}
+
+	m.setProblems(m.problems)
 }
 
 // windowTitle generates the window/tab title string based on current alert state.
